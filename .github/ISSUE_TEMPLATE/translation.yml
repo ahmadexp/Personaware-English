@@ -1,0 +1,54 @@
+name: Translation report
+description: Report Japanese text, unclear English, or an untranslated workflow
+title: "[Translation] "
+labels:
+  - translation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the English build. Please do not attach
+        proprietary source media, ROMs, or personal data.
+
+  - type: input
+    id: location
+    attributes:
+      label: Application or screen
+      description: Where does the text appear?
+      placeholder: Address Book > Edit > Cancel
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the keys or actions that reach the affected text.
+      placeholder: |
+        1. Open Address
+        2. Edit a record
+        3. Press Esc
+    validations:
+      required: true
+
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed text
+      description: Transcribe the visible text and suggest wording if relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Real hardware or emulator, image checksum, and any relevant configuration.
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Submission check
+      options:
+        - label: I removed personal data and did not attach proprietary source media or ROMs.
+          required: true
