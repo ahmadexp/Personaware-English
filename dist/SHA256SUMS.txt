@@ -1,1 +1,2 @@
 8bbec705277f2da369875a4c10edbb668f5245a3bbac32c3d7a20147e17dd4f8  Personaware-English.img
+6888272e7ecdb42dd0cdbfaca4f36066ce737f1ceecdf140b249507d69cbb3a3  PersonaWare-English-CF-Installer.zip

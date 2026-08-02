@@ -9,6 +9,7 @@ Thank you for helping make PersonaWare more accessible.
 - A correction that makes translated wording clearer or more accurate.
 - Runtime results from real PC 110 hardware or a compatible emulator.
 - Improvements to the CP932 audit or image-integrity checks.
+- Reproducible installer, recovery, wrong-drive, or power-loss test results.
 
 ## Before opening a change
 
@@ -19,6 +20,8 @@ Thank you for helping make PersonaWare more accessible.
    ```sh
    ./scripts/verify_release.sh
    ```
+
+   This requires Python 3, NASM, and `mtools`.
 
 4. Describe the screen or workflow affected and include a screenshot when
    possible.

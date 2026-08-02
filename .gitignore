@@ -3,5 +3,6 @@ extracted/
 legacy-english/
 original/
 scripts/__pycache__/
+tests/__pycache__/
 .DS_Store
 *.pyc
