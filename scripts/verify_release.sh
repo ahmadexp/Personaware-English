@@ -18,6 +18,7 @@ fi
 python3 -m py_compile scripts/*.py tests/*.py tools/*.py
 ./scripts/build_dos.sh
 python3 scripts/build_cf_installer.py
+python3 scripts/build_hardware_installer.py
 python3 scripts/build_screenshot_archive.py
 python3 -m unittest discover -s tests -v
 
@@ -105,6 +106,29 @@ for required_name in (
         raise SystemExit(f"CF installer is missing {required_name}")
 if any("MODERN" in name.upper() for name in names):
     raise SystemExit("English installer unexpectedly contains Modern files")
+
+hardware_installer = Path(
+    "dist/PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip"
+)
+with zipfile.ZipFile(hardware_installer) as archive:
+    hardware_names = set(archive.namelist())
+expected_hardware_names = {
+    "PWMINST/FORCERST.BAT",
+    "PWMINST/INSTALL.BAT",
+    "PWMINST/NOTICE.TXT",
+    "PWMINST/PW-EN.CRC",
+    "PWMINST/PW-EN.IMG",
+    "PWMINST/PWCOPY.COM",
+    "PWMINST/PWIMAGE.COM",
+    "PWMINST/README.TXT",
+    "PWMINST/RESTDATA.BAT",
+    "PWMINST/RESTORE.BAT",
+    "PWMINST/SHA256.TXT",
+    "PWMINST/STARTPW.BAT",
+    "PWMINST/STATE.OK",
+}
+if hardware_names != expected_hardware_names:
+    raise SystemExit("physical PC110 installer contents are incomplete")
 
 screenshot_archive = Path("dist/PersonaWare-English-2.0-Screenshots.zip")
 with zipfile.ZipFile(screenshot_archive) as archive:

@@ -7,6 +7,7 @@ cd "$repository_root"
 ./scripts/build_dos.sh
 python3 scripts/build_enhanced_image.py
 python3 scripts/build_cf_installer.py
+python3 scripts/build_hardware_installer.py
 python3 scripts/build_screenshot_archive.py
 
 python3 - <<'PY'
@@ -17,6 +18,7 @@ directory = Path("dist")
 names = (
     "Personaware-English-2.0.img",
     "PersonaWare-English-2.0.1-CF-Installer.zip",
+    "PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip",
     "PersonaWare-English-2.0-Screenshots.zip",
 )
 lines = []

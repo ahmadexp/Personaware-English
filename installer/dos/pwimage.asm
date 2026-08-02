@@ -3,6 +3,8 @@
 ; Usage: PWIMAGE /B   create C:\PWMINST\D-ORIG.IMG and checksum sidecar
 ;        PWIMAGE /R   verify and restore the saved D: volume
 ;        PWIMAGE /F   force recovery only when the D: boot sector is damaged
+;        PWIMAGE /Q   verify the saved recovery image without reading D:
+;        PWIMAGE /I   install the known PC110 English volume image to D:
 
 bits 16
 org 0x100
@@ -22,6 +24,8 @@ start:
     pop es
     mov word [image_handle], 0xffff
     mov word [manifest_handle], 0xffff
+    mov word [active_image_path], image_path
+    mov word [active_manifest_path], manifest_path
     call parse_mode
     jc usage_error
     cmp al, 'B'
@@ -32,6 +36,10 @@ start:
     je force_restore_mode
     cmp al, 'V'
     je verify_existing_mode
+    cmp al, 'Q'
+    je verify_backup_only_mode
+    cmp al, 'I'
+    je install_image_mode
 
 usage_error:
     mov dx, usage_text
@@ -167,6 +175,38 @@ verify_existing_mode:
     call print_string
     jmp exit_success
 
+verify_backup_only_mode:
+    mov dx, verify_backup_only_text
+    call print_string
+    call load_manifest
+    jc invalid_backup_error
+    call verify_backup_file
+    jc invalid_backup_error
+    mov dx, backup_only_valid_text
+    call print_string
+    jmp exit_success
+
+install_image_mode:
+    mov byte [install_mode], 1
+    mov word [active_image_path], install_image_path
+    mov word [active_manifest_path], install_manifest_path
+    mov dx, install_intro
+    call print_string
+    call load_manifest
+    jc invalid_install_image_error
+    call verify_backup_file
+    jc invalid_install_image_error
+    call inspect_target
+    jc target_error
+    mov ax, [current_sectors]
+    cmp ax, [manifest_buffer + MAN_SECTORS]
+    jne install_target_error
+    mov dx, install_verified_text
+    call print_string
+    call confirm_install
+    jc restore_cancelled
+    jmp write_image
+
 restore_mode:
     mov dx, restore_intro
     call print_string
@@ -201,9 +241,10 @@ restore_mode:
     jc restore_cancelled
 .confirmed:
 
+write_image:
     mov ah, 0x0d
     int 0x21
-    mov dx, image_path
+    mov dx, [active_image_path]
     mov ax, 0x3d00
     int 0x21
     jc invalid_backup_error
@@ -252,7 +293,14 @@ restore_mode:
     jc restore_failed
     call verify_target_crc
     jc restore_failed
+    cmp byte [install_mode], 1
+    je install_complete
     mov dx, restore_success
+    call print_string
+    jmp exit_success
+
+install_complete:
+    mov dx, install_success
     call print_string
     jmp exit_success
 
@@ -273,8 +321,19 @@ invalid_backup_error:
     call print_string
     jmp exit_error
 
+invalid_install_image_error:
+    call close_all
+    mov dx, invalid_install_image_text
+    call print_string
+    jmp exit_error
+
 wrong_target_error:
     mov dx, wrong_target_text
+    call print_string
+    jmp exit_error
+
+install_target_error:
+    mov dx, install_target_text
     call print_string
     jmp exit_error
 
@@ -353,7 +412,7 @@ check_backup_space:
     ret
 
 load_manifest:
-    mov dx, manifest_path
+    mov dx, [active_manifest_path]
     mov ax, 0x3d00
     int 0x21
     jc .bad
@@ -394,7 +453,7 @@ load_manifest:
     ret
 
 verify_backup_file:
-    mov dx, image_path
+    mov dx, [active_image_path]
     mov ax, 0x3d00
     int 0x21
     jc .bad
@@ -498,6 +557,31 @@ confirm_force_restore:
     mov si, confirm_buffer + 2
     mov di, force_word
     mov cx, 5
+.compare:
+    mov al, [si]
+    and al, 0xdf
+    cmp al, [di]
+    jne .cancel
+    inc si
+    inc di
+    loop .compare
+    clc
+    ret
+.cancel:
+    stc
+    ret
+
+confirm_install:
+    mov dx, install_confirm_text
+    call print_string
+    mov dx, confirm_buffer
+    mov ah, 0x0a
+    int 0x21
+    cmp byte [confirm_buffer + 1], 7
+    jne .cancel
+    mov si, confirm_buffer + 2
+    mov di, install_word
+    mov cx, 7
 .compare:
     mov al, [si]
     and al, 0xdf
@@ -637,6 +721,10 @@ parse_mode:
     je .ok
     cmp al, 'V'
     je .ok
+    cmp al, 'Q'
+    je .ok
+    cmp al, 'I'
+    je .ok
 .bad:
     stc
     ret
@@ -659,7 +747,7 @@ exit_usage:
     mov ax, 0x4c02
     int 0x21
 
-usage_text db 'Usage: PWIMAGE /B, /R, /V, or emergency /F', 13, 10, '$'
+usage_text db 'Usage: PWIMAGE /B, /R, /Q, /I, /V, or emergency /F', 13, 10, '$'
 backup_intro db 'Imaging the complete DOS D: volume to the CF.', 13, 10, '$'
 backup_success db 13, 10, 'Backup created and checksummed:', 13, 10
                db 'C:\PWMINST\D-ORIG.IMG', 13, 10, '$'
@@ -670,6 +758,8 @@ backup_failed_text db 13, 10, 'Backup failed. Partial backup files were removed.
 restore_intro db 'Checking the saved image and the current D: volume.', 13, 10, '$'
 verify_existing_text db 'Verifying the existing recovery image and D: identity.', 13, 10, '$'
 existing_valid_text db 13, 10, 'Existing recovery image is complete and valid.', 13, 10, '$'
+verify_backup_only_text db 'Verifying the existing recovery image.', 13, 10, '$'
+backup_only_valid_text db 13, 10, 'Recovery image checksum is valid.', 13, 10, '$'
 backup_verified_text db 13, 10, 'Backup image checksum is valid.', 13, 10, '$'
 confirm_text db 13, 10, 'RESTORE WILL REPLACE EVERY SECTOR ON D:', 13, 10
              db 'Type YES and press Enter to continue: $'
@@ -678,18 +768,30 @@ force_target_text db 13, 10, 'WARNING: D: volume identity check is bypassed.', 1
 force_confirm_text db 13, 10, 'FORCE RECOVERY WILL REPLACE EVERY SECTOR ON D:', 13, 10
                    db 'Type FORCE and press Enter to continue: $'
 force_word db 'FORCE'
+install_intro db 'Checking the PC110 hardware volume image and D: size.', 13, 10, '$'
+install_verified_text db 13, 10, 'The complete hardware image checksum is valid.', 13, 10, '$'
+install_confirm_text db 13, 10, 'INSTALL WILL REPLACE EVERY SECTOR ON D:', 13, 10
+                     db 'Type INSTALL and press Enter to continue: $'
+install_word db 'INSTALL'
 restore_success db 13, 10, 'D: matches the original image byte for byte.', 13, 10
+                db 'Restart the computer now. Do not access D: first.', 13, 10, '$'
+install_success db 13, 10, 'D: matches the PC110 English image byte for byte.', 13, 10
                 db 'Restart the computer now. Do not access D: first.', 13, 10, '$'
 restore_cancelled_text db 13, 10, 'Restore cancelled. D: was not changed.', 13, 10, '$'
 restore_failed_text db 13, 10, 'Restore or read-back verification failed.', 13, 10
                     db 'Keep the CF and backup files. Retry after a restart.', 13, 10, '$'
 invalid_backup_text db 13, 10, 'Backup image or checksum sidecar is missing or invalid.', 13, 10, '$'
+invalid_install_image_text db 13, 10, 'PC110 English image or checksum is missing or invalid.', 13, 10, '$'
 wrong_target_text db 13, 10, 'D: does not match the saved size and volume serial.', 13, 10
                   db 'Restore was blocked to protect the wrong drive.', 13, 10, '$'
+install_target_text db 13, 10, 'D: is not the same size as the PC110 hardware volume.', 13, 10
+                    db 'Installation was blocked to protect the wrong drive.', 13, 10, '$'
 target_error_text db 'D: is not a supported FAT volume with 512-byte sectors.', 13, 10, '$'
 
 image_path db 'C:\PWMINST\D-ORIG.IMG', 0
 manifest_path db 'C:\PWMINST\D-ORIG.CRC', 0
+install_image_path db 'C:\PWMINST\PW-EN.IMG', 0
+install_manifest_path db 'C:\PWMINST\PW-EN.CRC', 0
 manifest_magic db 'PWIMG001'
 manifest_buffer db 'PWIMG001'
                 dw 0
@@ -705,5 +807,8 @@ current_sectors dw 0
 current_serial dd 0
 crc_value dd 0xffffffff
 force_mode db 0
+install_mode db 0
+active_image_path dw image_path
+active_manifest_path dw manifest_path
 sector_buffer times SECTOR_SIZE db 0
 boot_sector_buffer times SECTOR_SIZE db 0

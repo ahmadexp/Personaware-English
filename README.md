@@ -24,7 +24,8 @@ original Power Management launcher entry remains in place.
 | Item | Value |
 | --- | --- |
 | Bootable image | [`dist/Personaware-English-2.0.img`](dist/Personaware-English-2.0.img) |
-| DOS CF installer | [`dist/PersonaWare-English-2.0.1-CF-Installer.zip`](dist/PersonaWare-English-2.0.1-CF-Installer.zip) |
+| Physical PC110 installer | [`dist/PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip`](dist/PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip) |
+| Legacy file-level installer | [`dist/PersonaWare-English-2.0.1-CF-Installer.zip`](dist/PersonaWare-English-2.0.1-CF-Installer.zip) |
 | Screenshot archive | [`dist/PersonaWare-English-2.0-Screenshots.zip`](dist/PersonaWare-English-2.0-Screenshots.zip) |
 | Format | 4 MiB raw MBR disk image with an active FAT partition |
 | Boot environment | PC DOS 7, U.S. English code page 437 |
@@ -35,7 +36,8 @@ SHA-256 checksums:
 
 ```text
 d66065cf935c4ed266660c13594f0cf1e0348391994c97b7c9818a5ebe2a91d0  Personaware-English-2.0.img
-28400e899fbd0ce6684a657725f9f55f9e8fe771d23a2e2315abd644c8f1fbc6  PersonaWare-English-2.0.1-CF-Installer.zip
+fb47927945ad175842f1bb5420504ac68be99432b39587192dbd280a22eabfe8  PersonaWare-English-2.0.1-CF-Installer.zip
+2c3a2fde55bcd5bd7ffd37f87bb757b355ebd9c3bb8111fb6659600089ca58ad  PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip
 8e09e1a3995b09aa598101e272948c16ae51b2ac508db03eccfe918a0fc12442  PersonaWare-English-2.0-Screenshots.zip
 ```
 
@@ -50,7 +52,30 @@ runtime pass was performed with the
 [`pc110-qemu`](https://github.com/ahmadexp/pc110-qemu) environment in snapshot
 mode.
 
-## Install from a bootable DOS CF
+## Install on a physical IBM PC 110
+
+Use `PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip` for real PC110
+hardware. Extract it over the existing `PWMINST` directory on the bootable DOS
+CF. Preserve `D-ORIG.IMG`, `D-ORIG.CRC`, and `USERDATA` if they already exist.
+Boot the CF as `C:` with the internal PersonaWare disk as `D:`, then run:
+
+```bat
+C:\PWMINST\INSTALL.BAT
+```
+
+This installer does not depend on MiSTer VHD geometry and does not update the
+internal disk file by file. It verifies or creates a complete recovery image,
+then writes the known PC110 PersonaWare English volume sector for sector. That
+volume includes the original PC110 boot sector, FATs, root-directory layout,
+DOS system files, and the latest translated PersonaWare files. The volume boot
+sector is written last, and every installed sector is read back and verified.
+
+Type `INSTALL` only at the final destructive-operation prompt. After success,
+the installer locks access to `D:` because DOS still has the old filesystem in
+memory. Remove the CF and restart immediately. See the
+[physical PC110 installation guide](docs/pc110-hardware-installer.md).
+
+## Legacy file-level installer
 
 Unzip `PersonaWare-English-2.0.1-CF-Installer.zip` onto the root of a DOS-bootable
 CF so it creates `C:\PWMINST`. Boot from the CF, confirm that the existing
@@ -72,10 +97,9 @@ can safely resume an interrupted installation from a verified image. Installer
 failures once, and tolerates DOS filesystems that cannot preserve optional
 timestamps or attributes.
 
-To retry after a failed 2.0 installation, keep the existing `PWMINST` directory
-and extract 2.0.1 over it, replacing files when prompted. Do not delete
-`D-ORIG.IMG`, `D-ORIG.CRC`, or `USERDATA`; the installer verifies and reuses
-them.
+After any failed file-level installation, restore the complete original volume
+before another attempt. For physical hardware, use the full-volume installer
+above instead of resuming file replacement on a partially modified disk.
 
 To restore the complete original `D:` volume, boot from the same CF and run:
 

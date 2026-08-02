@@ -3,8 +3,8 @@
 The MIT license in this repository applies only to project-authored translation
 scripts, translation data, documentation, and supporting configuration.
 
-`dist/Personaware-English-2.0.img` and the PersonaWare payload inside
-`dist/PersonaWare-English-2.0.1-CF-Installer.zip` contain software originally
+`dist/Personaware-English-2.0.img` and the PersonaWare payloads inside the CF
+and physical-PC110 installer archives contain software originally
 distributed by IBM, including PersonaWare and PC DOS components. Those
 components remain subject to their original copyrights and license terms. They
 are not placed under the MIT license and no third-party rights are granted by
