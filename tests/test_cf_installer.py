@@ -45,8 +45,8 @@ class CFInstallerTests(unittest.TestCase):
         ):
             self.assertTrue((self.package / name).is_file(), name)
         for name in (
-            "PAYLOAD/PW/PWPHOTO.COM",
-            "PAYLOAD/PW/PWPHOTO.TXT",
+            "PAYLOAD/PWPHOTO.COM",
+            "PAYLOAD/PWPHOTO.TXT",
             "PAYLOAD/PW/PHOTO/STOCK1.BMP",
             "PAYLOAD/PW/PHOTO/STOCK5.BMP",
         ):

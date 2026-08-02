@@ -14,8 +14,7 @@ ARCHIVE_ROOT = "PersonaWare-English-2.0-Screenshots"
 TIMESTAMP = (2026, 8, 2, 0, 0, 0)
 
 CAPTIONS = {
-    "launcher.png": "English PersonaWare launcher",
-    "photo-manager-launcher.png": "Photo Manager on the first launcher page",
+    "launcher.png": "English PersonaWare launcher with Power Management",
     "photo-manager-menu.png": "Photo Manager add, remove, assign, and restore menu",
     "address-book-warning.png": "Translated Address Book warning",
     "address-book-help.png": "English Address Book help",

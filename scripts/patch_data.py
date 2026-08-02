@@ -298,10 +298,9 @@ def replace_notebook_readme(path: Path) -> None:
         [
             "",
             "",
-            "11. Launcher Photos",
+            "11. DOS Photo Manager",
             "README",
-            "Open Photo Manager from the launcher. Use F8 or Page Down if an "
-            "item is beyond the first page. Import a prepared 190x250, "
+            "Open DOS from the launcher and type PWPHOTO. Import a prepared 190x250, "
             "16-color BMP, then assign it to one of the five launcher picture "
             "slots. Remove deletes only a gallery copy. Restore recovers the "
             "original pictures.",

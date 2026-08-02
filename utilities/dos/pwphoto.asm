@@ -1,4 +1,4 @@
-; PersonaWare Launcher Photo Manager
+; PersonaWare DOS Photo Manager
 ;
 ; Manages the five 190x250 16-colour BMP slots used by the PersonaWare
 ; launcher. The program is intentionally self-contained and runs as a DOS COM
@@ -430,15 +430,15 @@ exit_success:
     int 0x21
 
 menu_text db 13,10
-    db 'PersonaWare Launcher Photo Manager 2.0',13,10
-    db '======================================',13,10,13,10
+    db 'PersonaWare DOS Photo Manager 2.0',13,10
+    db '================================',13,10,13,10
     db '1  List gallery pictures',13,10
     db '2  Import a picture',13,10
     db '3  Assign a picture to a launcher slot',13,10
     db '4  Remove a gallery picture',13,10
     db '5  Restore original launcher pictures',13,10
     db '6  Help',13,10
-    db 'Q  Return to PersonaWare',13,10,13,10
+    db 'Q  Return to DOS',13,10,13,10
     db 'Selection: $'
 gallery_heading db 'Gallery pictures:',13,10,'$'
 gallery_indent db '  $'

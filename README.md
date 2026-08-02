@@ -15,8 +15,9 @@
 PersonaWare English replaces the Japanese application interface, warnings,
 help panels, launcher metadata, bundled data, and active DOS environment with
 concise English text while preserving the original software layout and PC 110
-hardware behavior. Version 2.0 also adds a native launcher Photo Manager with
-protected original pictures and tools for preparing modern image files.
+hardware behavior. Version 2.0 also adds a native DOS Photo Manager with
+protected original pictures and tools for preparing modern image files. The
+original Power Management launcher entry remains in place.
 
 ## Get the image
 
@@ -33,9 +34,9 @@ protected original pictures and tools for preparing modern image files.
 SHA-256 checksums:
 
 ```text
-d40690b4efa1ac2081c30a2609ccf7f9c492bc9ffe00ba9680792e1baddd535e  Personaware-English-2.0.img
-4e4e70b4dc186e7e5e34005d2b0108fc3abba949c8196e40b4e2770fb1c26f11  PersonaWare-English-2.0-CF-Installer.zip
-2a4431ea11f7996972a9c2e8d52622bb9269c599bb9be0013b0b22a591a3a3f7  PersonaWare-English-2.0-Screenshots.zip
+d66065cf935c4ed266660c13594f0cf1e0348391994c97b7c9818a5ebe2a91d0  Personaware-English-2.0.img
+fcab04abdd9f906a306c366e31460ef35d91c20a11427df6e7a3318e25aacaac  PersonaWare-English-2.0-CF-Installer.zip
+8e09e1a3995b09aa598101e272948c16ae51b2ac508db03eccfe918a0fc12442  PersonaWare-English-2.0-Screenshots.zip
 ```
 
 Verify the download before booting:
@@ -89,19 +90,18 @@ FAT16, use 512-byte sectors, contain at most 65,535 sectors, and run on a
 [complete CF installation and recovery guide](docs/cf-installer.md) before
 using it on hardware.
 
-## Launcher Photo Manager
+## DOS Photo Manager
 
-Photo Manager is a normal PersonaWare launcher application. It keeps the
-original five launcher pictures in `C:\PW\PHOTO\STOCK1.BMP` through
+Open DOS from the PersonaWare launcher, type `PWPHOTO`, and press Enter. Photo
+Manager keeps the original five launcher pictures in
+`C:\PW\PHOTO\STOCK1.BMP` through
 `STOCK5.BMP`, and stores up to nine user pictures as `USR1.BMP` through
 `USR9.BMP`. From the manager you can list and import pictures, assign one to any
 launcher picture slot, remove gallery copies, or restore one or all original
 pictures. Restart PersonaWare after assigning or restoring a slot.
 
-The launcher supports more applications than fit on one screen. Press F8 or
-Page Down to reach a later item, and F7 or Page Up to go back. Version 2.0 puts
-Photo Manager on the first page; Power Management is retained on the next
-page.
+Photo Manager is deliberately a DOS command rather than a seventeenth launcher
+entry. This keeps DOS and Power Management in their original launcher slots.
 
 PersonaWare requires an uncompressed 190x250, 16-color Windows BMP. The host
 tool converts PNG, JPEG, GIF, TIFF, BMP, and other formats supported by
@@ -141,40 +141,36 @@ that is mounted or currently running.
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/images/photo-manager-launcher.png" alt="Photo Manager in the PersonaWare launcher"><br>
-      <sub>Native Photo Manager launcher item</sub>
+      <img src="docs/images/launcher.png" alt="English PersonaWare launcher with Power Management"><br>
+      <sub>Original launcher layout with Power Management</sub>
     </td>
     <td width="50%" align="center">
-      <img src="docs/images/photo-manager-menu.png" alt="PersonaWare Launcher Photo Manager menu"><br>
+      <img src="docs/images/photo-manager-menu.png" alt="PersonaWare DOS Photo Manager menu"><br>
       <sub>Add, remove, assign, and restore launcher pictures</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/images/launcher.png" alt="English PersonaWare launcher"><br>
-      <sub>English application launcher</sub>
-    </td>
-    <td width="50%" align="center">
       <img src="docs/images/address-book-help.png" alt="English Address Book help"><br>
       <sub>Address Book help and keyboard reference</sub>
     </td>
-  </tr>
-  <tr>
     <td width="50%" align="center">
       <img src="docs/images/address-book-warning.png" alt="English Address Book cancel warning"><br>
       <sub>Translated warning and confirmation dialog</sub>
     </td>
+  </tr>
+  <tr>
     <td width="50%" align="center">
       <img src="docs/images/email-help.png" alt="English E-Mail help"><br>
       <sub>E-Mail help</sub>
     </td>
-  </tr>
-  <tr>
     <td width="50%" align="center">
       <img src="docs/images/fax-help.png" alt="English FAX help"><br>
       <sub>FAX help</sub>
     </td>
-    <td width="50%" align="center">
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
       <img src="docs/images/dos-command.png" alt="English PC DOS command error"><br>
       <sub>English DOS shell and command errors</sub>
     </td>
@@ -222,11 +218,12 @@ that is mounted or currently running.
 
 ### Version 2.0 additions
 
-- Native 16-bit DOS Photo Manager integrated as the 17th launcher application.
+- Native 16-bit DOS Photo Manager available through the `PWPHOTO` command.
 - Nine-picture user gallery, five assignable launcher slots, and protected
   copies of every original picture.
 - Modern host-side converter and image-management commands.
-- English Notebook and DOS help covering launcher paging and photo management.
+- Original DOS and Power Management launcher entries preserved.
+- English Notebook and DOS help covering photo management.
 
 The Japanese-only postal lookup database was removed. Address Book remains
 usable through manual postal and address entry, and its help explains the
@@ -247,8 +244,9 @@ The release image passed structural, static, and runtime checks:
   resource banks, character-conversion tables, or binary false positives.
 - Booted to the launcher and exercised Address Book warnings and help, E-Mail
   help and setup, FAX help, the DOS launcher, and an English command error.
-- Booted the 17-item launcher, verified native paging, ran Photo Manager, listed
-  an empty gallery, and restored all five original pictures.
+- Confirmed the original 16-item launcher and Power Management entry are
+  unchanged, then ran `PWPHOTO` from DOS, listed an empty gallery, and restored
+  all five original pictures.
 - Rebuilt and tested the DOS CF installer, recovery image metadata, backup-first
   ordering, verified resume, payload CRCs, complete image read-back, target
   identity checks, boot-sector-last restore, emergency recovery, and the
@@ -279,7 +277,7 @@ metadata, bundled starter data, help, and active DOS startup text are English.
 dist/                         Bootable image, CF installer, and SHA-256 manifest
 docs/images/                  Runtime screenshots from the finished build
 installer/dos/                16-bit backup, restore, and verified-copy sources
-utilities/dos/pwphoto.asm     Native PersonaWare launcher Photo Manager
+utilities/dos/pwphoto.asm     Native PersonaWare DOS Photo Manager
 resources/name-translations.tsv
                               Reviewed city and dial-directory names
 scripts/audit_japanese.py     CP932-aware Japanese text scanner

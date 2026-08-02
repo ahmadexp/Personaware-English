@@ -199,7 +199,7 @@ def dos_file_exists(image: Path, dos_path: str) -> bool:
 
 
 def ensure_photo_manager(image: Path) -> None:
-    if not dos_file_exists(image, "/PW/PWPHOTO.COM"):
+    if not dos_file_exists(image, "/PWPHOTO.COM"):
         raise ValueError(
             "this image does not contain Photo Manager; build the 2.0 image first"
         )

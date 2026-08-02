@@ -6,13 +6,13 @@ All notable project changes are documented here.
 
 ### Added
 
-- Native PersonaWare Photo Manager as an additional launcher application.
+- Native PersonaWare Photo Manager available as the `PWPHOTO` DOS command.
 - Nine-picture user gallery with add, list, assign, and remove operations.
 - Protected backups and one-slot or all-slot restoration for the five original
   launcher pictures.
 - ImageMagick-based host tool for converting modern pictures to exact 190x250,
   uncompressed 4-bit BMP files and managing an offline disk image.
-- English Notebook and DOS help for launcher paging and picture management.
+- English Notebook and DOS help for picture management.
 - Clean English boot without loading the inactive Japanese DOS/V display
   driver or printing its code-page warning.
 - Automated image, converter, gallery, assignment, removal, restoration, and
@@ -20,7 +20,7 @@ All notable project changes are documented here.
 
 ### Verified
 
-- The 17-item launcher boots and pages correctly in the PC 110 QEMU model.
+- The original 16-item launcher and Power Management entry remain unchanged.
 - Photo Manager runs on PC DOS, lists the gallery, and restores all stock
   pictures.
 - All reachable PersonaWare UI, help, launcher metadata, starter data, and

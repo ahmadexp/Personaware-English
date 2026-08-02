@@ -7,7 +7,6 @@ from pathlib import Path
 
 from scripts.build_enhanced_image import (
     PHOTO_SLOTS,
-    add_launcher_record,
     add_notebook_help,
     build_enhanced_image,
     disable_inactive_dosv_driver,
@@ -47,29 +46,26 @@ class PhotoManagerTests(unittest.TestCase):
             hashlib.sha256(self.source_image.read_bytes()).hexdigest(),
         )
 
-    def test_launcher_record_is_native_sized_and_idempotent(self) -> None:
-        table = self.root / "launcher.ctl"
-        copy_from_image(self.source_image, "/PW/DATA/MDLAUNCH.CTL", table)
-        original = table.read_bytes()
-        enhanced = add_launcher_record(original)
-        self.assertEqual(len(original) + 120, len(enhanced))
-        self.assertEqual(b"\0\0\0\xf0", enhanced[-4:])
-        self.assertEqual(1, enhanced.count(b"PWPHOTO.COM"))
-        self.assertEqual(b"Photo Mgr", enhanced[14 * 120 + 6 : 14 * 120 + 15])
-        self.assertIn(b"COMMAND.COM", enhanced[15 * 120 : 16 * 120])
-        self.assertIn(b"ps2.exe", enhanced[16 * 120 : 17 * 120])
-        self.assertEqual(enhanced, add_launcher_record(enhanced))
+    def test_original_launcher_and_power_management_are_preserved(self) -> None:
+        for dos_path in ("/PW/DATA/MDLAUNCH.CTL", "/PW/SYSTEM/MDLAUNCH.MAL"):
+            source = self.root / f"source-{Path(dos_path).name}"
+            enhanced = self.root / f"enhanced-{Path(dos_path).name}"
+            copy_from_image(self.source_image, dos_path, source)
+            copy_from_image(self.enhanced_image, dos_path, enhanced)
+            self.assertEqual(source.read_bytes(), enhanced.read_bytes())
+            self.assertIn(b"Power MGT", enhanced.read_bytes())
+            self.assertNotIn(b"PWPHOTO.COM", enhanced.read_bytes())
 
     def test_notebook_help_is_added_once(self) -> None:
         notebook = self.root / "DEFAULT.NTD"
         copy_from_image(self.source_image, "/PW/DATA/DEFAULT.NTD", notebook)
         original = notebook.read_bytes()
         enhanced = add_notebook_help(original)
-        self.assertEqual(1, enhanced.count(b"11. Launcher Photos"))
+        self.assertEqual(1, enhanced.count(b"11. DOS Photo Manager"))
         self.assertEqual(enhanced, add_notebook_help(enhanced))
         self.assertTrue(enhanced.endswith(b"\x1a"))
         without_marker = add_notebook_help(original.rstrip(b"\x1a"))
-        self.assertEqual(1, without_marker.count(b"11. Launcher Photos"))
+        self.assertEqual(1, without_marker.count(b"11. DOS Photo Manager"))
         self.assertFalse(without_marker.endswith(b"\x1a"))
 
     def test_inactive_dosv_display_driver_is_disabled(self) -> None:
@@ -84,10 +80,10 @@ class PhotoManagerTests(unittest.TestCase):
         self.assertNotIn(b"\r\n" + display, data)
         self.assertEqual(data, disable_inactive_dosv_driver(data))
 
-    def test_enhanced_image_has_stock_backups_and_launcher_utility(self) -> None:
+    def test_enhanced_image_has_stock_backups_and_dos_utility(self) -> None:
         utility = self.root / "PWPHOTO.COM"
-        copy_from_image(self.enhanced_image, "/PW/PWPHOTO.COM", utility)
-        self.assertIn(b"PersonaWare Launcher Photo Manager 2.0", utility.read_bytes())
+        copy_from_image(self.enhanced_image, "/PWPHOTO.COM", utility)
+        self.assertIn(b"PersonaWare DOS Photo Manager 2.0", utility.read_bytes())
         for number in range(1, 6):
             stock = self.root / f"STOCK{number}.BMP"
             copy_from_image(

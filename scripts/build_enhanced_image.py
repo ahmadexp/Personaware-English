@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add the native launcher photo manager to a PersonaWare English image."""
+"""Add the DOS photo manager to a PersonaWare English image."""
 
 from __future__ import annotations
 
@@ -44,47 +44,18 @@ def copy_to_image(image: Path, source: Path, dos_path: str) -> None:
     run(["mcopy", "-o", "-i", image_spec(image), str(source), f"::{dos_path}"])
 
 
-def add_launcher_record(data: bytes) -> bytes:
-    """Append a Photo Manager item to a standard 120-byte launcher table."""
-    if b"PWPHOTO.COM" in data:
-        return data
-    if len(data) < 16 * 120 + 4 or data[-4:] != b"\0\0\0\xf0":
-        raise ValueError("unrecognized MDLAUNCH table")
-    records = data[:-4]
-    if len(records) % 120:
-        raise ValueError("MDLAUNCH table has a partial record")
-    if len(records) // 120 >= 48:
-        raise ValueError("MDLAUNCH already contains the maximum 48 applications")
-
-    # The stock Power Management record has field widths that fit all of the
-    # new labels. Reusing its native layout also preserves the launcher flags.
-    # Insert before DOS so Photo Manager is visible on the first 16-item page;
-    # DOS remains visible and Power Management moves to the next page.
-    record = bytearray(records[15 * 120 : 16 * 120])
-    record[6:15] = b"Photo Mgr"
-    record[16:29] = b"Photo Manager"
-    record[30:38] = b"  P_KI01"
-    record[39:48] = b"  I_INK01"
-    record[75:87] = b" PWPHOTO.COM"
-    if record[15] or record[29] or record[38] or record[48] or record[87]:
-        raise AssertionError("launcher string terminators moved")
-    insertion = 14 * 120
-    return bytes(records[:insertion] + record + records[insertion:] + data[-4:])
-
-
 def add_notebook_help(data: bytes) -> bytes:
-    if b"11. Launcher Photos" in data:
+    if b"11. DOS Photo Manager" in data:
         return data
     marker = b"\x1a" if data.endswith(b"\x1a") else b""
     body = data[: -len(marker)] if marker else data
     if body and not body.endswith(b"\r\n"):
         body += b"\r\n"
     row = (
-        b',,"11. Launcher Photos",README,"Open Photo Manager from the launcher. '
-        b'Use F8 or Page Down if an item is beyond the first page. Import a '
-        b'prepared 190x250, 16-color BMP, then assign it to one of the five '
-        b'launcher picture slots. Remove deletes only a gallery copy. Restore '
-        b'recovers the original pictures."\r\n'
+        b',,"11. DOS Photo Manager",README,"Open DOS from the launcher and '
+        b'type PWPHOTO. Import a prepared 190x250, 16-color BMP, then assign '
+        b'it to one of the five launcher picture slots. Remove deletes only a '
+        b'gallery copy. Restore recovers the original pictures."\r\n'
     )
     return body + row + marker
 
@@ -101,15 +72,15 @@ def disable_inactive_dosv_driver(data: bytes) -> bytes:
 
 
 def photo_help() -> bytes:
-    text = """PERSONAWARE LAUNCHER PHOTO MANAGER 2.0
-========================================
+    text = """PERSONAWARE DOS PHOTO MANAGER 2.0
+==================================
 
-Open Photo Manager from the PersonaWare launcher. The five native launcher
-picture slots are shared by the applications. User pictures are kept in
-C:\\PW\\PHOTO as USR1.BMP through USR9.BMP.
+Open DOS from the PersonaWare launcher, then type PWPHOTO and press Enter. The
+five native launcher picture slots are shared by the applications. User
+pictures are kept in C:\\PW\\PHOTO as USR1.BMP through USR9.BMP.
 
 IMPORT
-  Copy a prepared BMP to a DOS drive, open Photo Manager, and choose Import.
+  Copy a prepared BMP to a DOS drive, run PWPHOTO, and choose Import.
   The file must be an uncompressed 190 by 250 pixel, 16-color Windows BMP.
   Use tools/personaware_photos.py on a modern computer to prepare an ordinary
   PNG, JPEG, GIF, TIFF, or BMP automatically.
@@ -175,12 +146,6 @@ def build_enhanced_image(source: Path, output: Path) -> Path:
             copy_from_image(output, f"/PW/SYSTEM/{name}", stock)
             copy_to_image(output, stock, f"/PW/PHOTO/STOCK{index}.BMP")
 
-        for dos_path in ("/PW/DATA/MDLAUNCH.CTL", "/PW/SYSTEM/MDLAUNCH.MAL"):
-            launcher = temporary_root / Path(dos_path).name
-            copy_from_image(output, dos_path, launcher)
-            launcher.write_bytes(add_launcher_record(launcher.read_bytes()))
-            copy_to_image(output, launcher, dos_path)
-
         notebook = temporary_root / "DEFAULT.NTD"
         copy_from_image(output, "/PW/DATA/DEFAULT.NTD", notebook)
         notebook.write_bytes(add_notebook_help(notebook.read_bytes()))
@@ -193,9 +158,9 @@ def build_enhanced_image(source: Path, output: Path) -> Path:
 
         help_file = temporary_root / "PWPHOTO.TXT"
         help_file.write_bytes(photo_help())
-        copy_to_image(output, help_file, "/PW/PWPHOTO.TXT")
+        copy_to_image(output, help_file, "/PWPHOTO.TXT")
 
-    copy_to_image(output, utility, "/PW/PWPHOTO.COM")
+    copy_to_image(output, utility, "/PWPHOTO.COM")
     validate_enhanced_image(output)
     return output
 
@@ -216,13 +181,14 @@ def validate_enhanced_image(image: Path) -> None:
             ):
                 raise ValueError(f"invalid STOCK{index}.BMP in {image}")
         utility = root / "PWPHOTO.COM"
-        copy_from_image(image, "/PW/PWPHOTO.COM", utility)
-        if b"PersonaWare Launcher Photo Manager 2.0" not in utility.read_bytes():
+        copy_from_image(image, "/PWPHOTO.COM", utility)
+        if b"PersonaWare DOS Photo Manager 2.0" not in utility.read_bytes():
             raise ValueError("installed PWPHOTO.COM failed its identity check")
         launcher = root / "MDLAUNCH.CTL"
         copy_from_image(image, "/PW/DATA/MDLAUNCH.CTL", launcher)
-        if launcher.read_bytes().count(b"PWPHOTO.COM") != 1:
-            raise ValueError("Photo Manager launcher record is missing or duplicated")
+        launcher_data = launcher.read_bytes()
+        if b"PWPHOTO.COM" in launcher_data or b"Power MGT" not in launcher_data:
+            raise ValueError("original Power Management launcher entry was not preserved")
 
 
 def main() -> int:

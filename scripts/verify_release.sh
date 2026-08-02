@@ -95,8 +95,8 @@ for required_name in (
     "PWMINST/PWIMAGE.COM",
     "PWMINST/PWCOPY.COM",
     "PWMINST/STATE.OK",
-    "PWMINST/PAYLOAD/PW/PWPHOTO.COM",
-    "PWMINST/PAYLOAD/PW/PWPHOTO.TXT",
+    "PWMINST/PAYLOAD/PWPHOTO.COM",
+    "PWMINST/PAYLOAD/PWPHOTO.TXT",
     "PWMINST/PAYLOAD/PW/PHOTO/STOCK1.BMP",
     "PWMINST/PAYLOAD/PW/PHOTO/STOCK5.BMP",
 ):
@@ -110,7 +110,6 @@ with zipfile.ZipFile(screenshot_archive) as archive:
     screenshot_names = set(archive.namelist())
 for screenshot in (
     "launcher.png",
-    "photo-manager-launcher.png",
     "photo-manager-menu.png",
     "address-book-warning.png",
     "address-book-help.png",
@@ -127,7 +126,6 @@ for screenshot in (
 for screenshot in (
     "personaware-english-cf-installer.png",
     "personaware-english-cf-restore.png",
-    "photo-manager-launcher.png",
     "photo-manager-menu.png",
 ):
     if not (Path("docs/images") / screenshot).is_file():
