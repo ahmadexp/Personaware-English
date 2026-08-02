@@ -15,6 +15,8 @@ start:
     mov word [source_handle], 0xffff
     mov word [target_handle], 0xffff
     mov byte [target_created], 0
+    mov byte [operation_mode], 0
+    mov word [failure_stage], generic_stage_text
     xor ax, ax
     mov al, [0x80]
     add ax, 0x81
@@ -35,11 +37,13 @@ start:
     jne usage_error
     call arguments_finished
     jc usage_error
+    mov byte [operation_mode], 2
     call delete_file
     jc operation_error
     jmp success
 
 check_mode:
+    mov byte [operation_mode], 1
     mov di, arg3
     call parse_one
     jc usage_error
@@ -89,10 +93,42 @@ usage_error:
 operation_error:
     mov dx, error_text
     call print_string
+    mov dx, [failure_stage]
+    call print_string
+    cmp byte [operation_mode], 0
+    je .copy_paths
+    mov dx, file_text
+    call print_string
+    cmp byte [operation_mode], 1
+    je .checked_path
+    mov si, arg2
+    jmp .print_one
+.checked_path:
+    mov si, arg1
+.print_one:
+    call print_asciiz
+    mov dx, newline_text
+    call print_string
+    jmp .exit
+.copy_paths:
+    mov dx, source_text
+    call print_string
+    mov si, arg1
+    call print_asciiz
+    mov dx, newline_text
+    call print_string
+    mov dx, target_text
+    call print_string
+    mov si, arg2
+    call print_asciiz
+    mov dx, newline_text
+    call print_string
+.exit:
     mov ax, 0x4c01
     int 0x21
 
 delete_file:
+    mov word [failure_stage], delete_stage_text
     mov dx, arg2
     xor cx, cx
     mov ax, 0x4301
@@ -109,12 +145,16 @@ delete_file:
     ret
 
 copy_file:
+    mov word [source_attributes], 0
+    mov byte [source_time_valid], 0
     mov dx, arg1
     mov ax, 0x4300
     int 0x21
-    jc .failed
+    jc .open_source
     mov [source_attributes], cx
 
+.open_source:
+    mov word [failure_stage], open_source_stage_text
     mov dx, arg2
     xor cx, cx
     mov ax, 0x4301
@@ -129,10 +169,13 @@ copy_file:
     mov bx, ax
     mov ax, 0x5700
     int 0x21
-    jc .failed
+    jc .create_target
     mov [source_time], cx
     mov [source_date], dx
+    mov byte [source_time_valid], 1
 
+.create_target:
+    mov word [failure_stage], create_target_stage_text
     mov dx, arg2
     xor cx, cx
     mov ah, 0x3c
@@ -142,6 +185,7 @@ copy_file:
     mov byte [target_created], 1
 
 .copy_block:
+    mov word [failure_stage], read_source_stage_text
     mov bx, [source_handle]
     mov dx, copy_buffer
     mov cx, 4096
@@ -151,6 +195,7 @@ copy_file:
     test ax, ax
     jz .copy_complete
     mov cx, ax
+    mov word [failure_stage], write_target_stage_text
     mov bx, [target_handle]
     mov dx, copy_buffer
     mov ah, 0x40
@@ -161,12 +206,15 @@ copy_file:
     jmp .copy_block
 
 .copy_complete:
+    cmp byte [source_time_valid], 1
+    jne .close_copied_files
     mov bx, [target_handle]
     mov cx, [source_time]
     mov dx, [source_date]
     mov ax, 0x5701
     int 0x21
-    jc .failed
+.close_copied_files:
+    mov word [failure_stage], close_stage_text
     call close_handles
     jc .failed
 
@@ -174,8 +222,8 @@ copy_file:
     mov cx, [source_attributes]
     mov ax, 0x4301
     int 0x21
-    jc .failed
 
+    mov word [failure_stage], compare_stage_text
     call verify_copy
     jc .failed
     clc
@@ -249,6 +297,7 @@ verify_copy:
     ret
 
 verify_source_crc:
+    mov word [failure_stage], crc_stage_text
     mov word [source_handle], 0xffff
     mov word [target_handle], 0xffff
     mov dx, arg1
@@ -446,17 +495,42 @@ print_string:
     int 0x21
     ret
 
+print_asciiz:
+    lodsb
+    test al, al
+    jz .done
+    mov dl, al
+    mov ah, 0x02
+    int 0x21
+    jmp print_asciiz
+.done:
+    ret
+
 usage_text db 'Usage: PWCOPY source destination CRC32', 13, 10
            db '       PWCOPY source destination -', 13, 10
            db '       PWCOPY /C file CRC32', 13, 10
            db '       PWCOPY /D file', 13, 10, '$'
 error_text db 'Verified file operation failed.', 13, 10, '$'
+generic_stage_text db 'Stage: file operation', 13, 10, '$'
+delete_stage_text db 'Stage: delete file', 13, 10, '$'
+crc_stage_text db 'Stage: read and CRC-check source', 13, 10, '$'
+open_source_stage_text db 'Stage: open source', 13, 10, '$'
+create_target_stage_text db 'Stage: create target', 13, 10, '$'
+read_source_stage_text db 'Stage: read source', 13, 10, '$'
+write_target_stage_text db 'Stage: write target', 13, 10, '$'
+close_stage_text db 'Stage: close copied files', 13, 10, '$'
+compare_stage_text db 'Stage: read back and compare target', 13, 10, '$'
+source_text db 'Source: ', '$'
+target_text db 'Target: ', '$'
+file_text db 'File: ', '$'
+newline_text db 13, 10, '$'
 
 source_handle dw 0xffff
 target_handle dw 0xffff
 source_attributes dw 0
 source_time dw 0
 source_date dw 0
+source_time_valid db 0
 verify_count dw 0
 target_created db 0
 close_error db 0
@@ -464,6 +538,8 @@ expected_crc_present db 0
 expected_crc dd 0
 crc_value dd 0xffffffff
 command_end dw 0
+failure_stage dw generic_stage_text
+operation_mode db 0
 arg1 times 64 db 0
 arg2 times 64 db 0
 arg3 times 64 db 0

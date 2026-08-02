@@ -15,7 +15,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_IMAGE = PROJECT_ROOT / "dist" / "Personaware-English-2.0.img"
 DEFAULT_OUTPUT = PROJECT_ROOT / "build" / "cf-installer-v2"
-DEFAULT_ZIP = PROJECT_ROOT / "dist" / "PersonaWare-English-2.0-CF-Installer.zip"
+DEFAULT_ZIP = PROJECT_ROOT / "dist" / "PersonaWare-English-2.0.1-CF-Installer.zip"
 OUTPUT_MARKER = ".personaware-cf-installer-output"
 DOS_NEWLINE = "\r\n"
 USER_DATABASES = ("DEFAULT.ADD", "DEFAULT.NTD", "DEFAULT.SCD", "DEFAULT.TDD")
@@ -97,13 +97,9 @@ def relative_dos_path(path: Path, root: Path) -> str:
     return "\\".join(path.relative_to(root).parts).upper()
 
 
-def build_file_script(package: Path) -> bytes:
+def payload_files(package: Path) -> list[Path]:
     payload = package / "PAYLOAD"
-    directories = sorted(
-        (path for path in payload.rglob("*") if path.is_dir()),
-        key=lambda path: (len(path.relative_to(payload).parts), str(path)),
-    )
-    files = sorted(
+    return sorted(
         (path for path in payload.rglob("*") if path.is_file()),
         key=lambda path: (
             relative_dos_path(path, payload) in {"AUTOEXEC.BAT", "CONFIG.SYS"},
@@ -111,7 +107,42 @@ def build_file_script(package: Path) -> bytes:
         ),
     )
 
+
+def build_verify_script(package: Path) -> bytes:
     lines = ["@ECHO OFF", "SET PWERR=0"]
+    for source in payload_files(package):
+        relative = relative_dos_path(source, package)
+        expected_crc = zlib.crc32(source.read_bytes()) & 0xFFFFFFFF
+        lines.extend(
+            [
+                (
+                    f"C:\\PWMINST\\PWCOPY.COM /C "
+                    f"C:\\PWMINST\\{relative} {expected_crc:08X}"
+                ),
+                "IF ERRORLEVEL 1 GOTO FAILED",
+            ]
+        )
+    lines.extend(["GOTO DONE", ":FAILED", "SET PWERR=1", ":DONE"])
+    return dos_text(lines)
+
+
+def build_file_script(package: Path) -> bytes:
+    payload = package / "PAYLOAD"
+    directories = sorted(
+        (path for path in payload.rglob("*") if path.is_dir()),
+        key=lambda path: (len(path.relative_to(payload).parts), str(path)),
+    )
+    files = payload_files(package)
+
+    lines = [
+        "@ECHO OFF",
+        "SET PWERR=0",
+        "IF NOT EXIST D:\\PW\\SYSTEM\\IBMZIPC2.ZB GOTO NOZIPDB",
+        "ECHO Removing obsolete Japanese postal database.",
+        "C:\\PWMINST\\PWCOPY.COM /D D:\\PW\\SYSTEM\\IBMZIPC2.ZB",
+        "IF ERRORLEVEL 1 GOTO FAILED",
+        ":NOZIPDB",
+    ]
     for directory in directories:
         target = relative_dos_path(directory, payload)
         lines.extend(
@@ -120,25 +151,29 @@ def build_file_script(package: Path) -> bytes:
                 "IF ERRORLEVEL 1 GOTO FAILED",
             ]
         )
-    for source in files:
+    for number, source in enumerate(files):
         relative = relative_dos_path(source, package)
         target = relative_dos_path(source, payload)
         expected_crc = zlib.crc32(source.read_bytes()) & 0xFFFFFFFF
         lines.extend(
             [
+                f"ECHO Installing D:\\{target}",
+                (
+                    f"C:\\PWMINST\\PWCOPY.COM C:\\PWMINST\\{relative} "
+                    f"D:\\{target} {expected_crc:08X}"
+                ),
+                f"IF NOT ERRORLEVEL 1 GOTO OK{number:03d}",
+                f"ECHO Retrying D:\\{target} once.",
                 (
                     f"C:\\PWMINST\\PWCOPY.COM C:\\PWMINST\\{relative} "
                     f"D:\\{target} {expected_crc:08X}"
                 ),
                 "IF ERRORLEVEL 1 GOTO FAILED",
+                f":OK{number:03d}",
             ]
         )
     lines.extend(
         [
-            "IF NOT EXIST D:\\PW\\SYSTEM\\IBMZIPC2.ZB GOTO NOZIPDB",
-            "C:\\PWMINST\\PWCOPY.COM /D D:\\PW\\SYSTEM\\IBMZIPC2.ZB",
-            "IF ERRORLEVEL 1 GOTO FAILED",
-            ":NOZIPDB",
             (
                 f"C:\\PWMINST\\PWCOPY.COM C:\\PWMINST\\STATE.OK "
                 f"C:\\PWMINST\\COPY.OK {STATE_MARKER_CRC:08X}"
@@ -165,10 +200,16 @@ def install_batch() -> bytes:
         "C:",
         "IF NOT EXIST C:\\PWMINST\\PWIMAGE.COM GOTO WRONGCF",
         "IF NOT EXIST C:\\PWMINST\\PWCOPY.COM GOTO WRONGCF",
+        "IF NOT EXIST C:\\PWMINST\\VERIFY.BAT GOTO WRONGCF",
         "IF NOT EXIST C:\\PWMINST\\PAYLOAD\\PW\\PW.BAT GOTO WRONGCF",
+        "IF NOT EXIST D:\\PW\\PW.BAT GOTO NOTARGET",
+        "ECHO Preflight: Checking every installer payload file on C:.",
+        "CALL C:\\PWMINST\\VERIFY.BAT",
+        'IF "%PWERR%"=="1" GOTO PAYLOADFAIL',
+        "ECHO Installer payload verified.",
+        "ECHO.",
         "IF EXIST C:\\PWMINST\\D-ORIG.IMG GOTO VERIFYBACKUP",
         "IF EXIST C:\\PWMINST\\D-ORIG.CRC GOTO INCOMPLETE",
-        "IF NOT EXIST D:\\PW\\PW.BAT GOTO NOTARGET",
         "ECHO Step 1 of 3: Creating an exact image of the D: volume.",
         "ECHO This can take several minutes. Do not turn the computer off.",
         "C:\\PWMINST\\PWIMAGE.COM /B",
@@ -266,6 +307,11 @@ def install_batch() -> bytes:
             ":BACKUPFAIL",
             "ECHO The full D: image could not be created.",
             "ECHO Nothing was installed.",
+            "GOTO ERROR",
+            ":PAYLOADFAIL",
+            "ECHO The installer payload on C: is incomplete or damaged.",
+            "ECHO D: was not changed. Copy a fresh installer onto this CF.",
+            "ECHO Preserve D-ORIG.IMG, D-ORIG.CRC, and USERDATA if present.",
             "GOTO ERROR",
             ":DATAFAIL",
             "ECHO The optional user-data copy failed.",
@@ -432,6 +478,7 @@ def readme() -> bytes:
             "  4. With the CF removed, the upgraded disk boots normally as C:.",
             "  A valid existing image is verified and can resume an install.",
             "  An incomplete or invalid image pair is preserved and blocks it.",
+            "  A preflight reads and CRC-checks every payload file first.",
             "",
             "RESTORE THE COMPLETE ORIGINAL D: VOLUME",
             "  1. Boot DOS from the same CF.",
@@ -458,8 +505,9 @@ def readme() -> bytes:
             "  Active English DOS locale files are also installed on D:.",
             "",
             "SAFETY",
-            "  Payload CRCs are checked before copying. Copies are read back and",
-            "  compared. The volume boot sector is restored last. The full image",
+            "  Payload CRCs are checked before backup and again before copying.",
+            "  Failed copies are retried once, then report both file paths and",
+            "  the failed stage. Copies are read back and compared. The full image",
             "  is checked",
             "  before restore, and the restored D: volume is read back and checked.",
             "  If any check fails, keep the CF and restart before retrying.",
@@ -527,6 +575,7 @@ def build_cf_installer(image: Path, output: Path, zip_path: Path) -> Path:
     (package / "STATE.OK").write_bytes(STATE_MARKER)
 
     (package / "FILES.BAT").write_bytes(build_file_script(package))
+    (package / "VERIFY.BAT").write_bytes(build_verify_script(package))
     (package / "INSTALL.BAT").write_bytes(install_batch())
     (package / "RESTORE.BAT").write_bytes(restore_batch())
     (package / "FORCERST.BAT").write_bytes(force_restore_batch())

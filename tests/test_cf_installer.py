@@ -32,6 +32,7 @@ class CFInstallerTests(unittest.TestCase):
     def test_package_has_install_and_recovery_tools(self) -> None:
         for name in (
             "INSTALL.BAT",
+            "VERIFY.BAT",
             "RESTORE.BAT",
             "FORCERST.BAT",
             "RESTDATA.BAT",
@@ -81,7 +82,9 @@ class CFInstallerTests(unittest.TestCase):
     def test_install_script_is_backup_first_and_non_overwriting(self) -> None:
         script = (self.package / "INSTALL.BAT").read_text(encoding="ascii")
         image_position = script.index("PWIMAGE.COM /B")
+        preflight_position = script.index("CALL C:\\PWMINST\\VERIFY.BAT")
         install_position = script.index("CALL C:\\PWMINST\\FILES.BAT")
+        self.assertLess(preflight_position, image_position)
         self.assertLess(image_position, install_position)
         self.assertIn("IF EXIST C:\\PWMINST\\D-ORIG.IMG GOTO VERIFYBACKUP", script)
         self.assertIn("C:\\PWMINST\\PWIMAGE.COM /V", script)
@@ -96,6 +99,7 @@ class CFInstallerTests(unittest.TestCase):
         )
         self.assertNotIn("ECHO INSTALL COMPLETE>", script)
         self.assertNotIn("ECHO USER DATA COMPLETE>", script)
+        self.assertIn("GOTO PAYLOADFAIL", script)
         file_script = (self.package / "FILES.BAT").read_text(encoding="ascii")
         self.assertIn(
             f"PWCOPY.COM C:\\PWMINST\\STATE.OK C:\\PWMINST\\COPY.OK "
@@ -161,6 +165,10 @@ class CFInstallerTests(unittest.TestCase):
             if line.startswith("C:\\PWMINST\\PWCOPY.COM C:\\PWMINST\\PAYLOAD")
         ]
         self.assertTrue(copy_lines)
+        self.assertEqual(0, len(copy_lines) % 2)
+        for first, retry in zip(copy_lines[::2], copy_lines[1::2], strict=True):
+            self.assertEqual(first, retry)
+        primary_copy_lines = copy_lines[::2]
         for line in copy_lines:
             parts = line.split()
             self.assertEqual(4, len(parts), line)
@@ -171,11 +179,50 @@ class CFInstallerTests(unittest.TestCase):
             self.assertEqual(actual, int(expected, 16), line)
             self.assertLessEqual(len(line), 127, line)
         autoexec = next(
-            i for i, line in enumerate(copy_lines) if "AUTOEXEC.BAT" in line
+            i for i, line in enumerate(primary_copy_lines) if "AUTOEXEC.BAT" in line
         )
-        config = next(i for i, line in enumerate(copy_lines) if "CONFIG.SYS" in line)
-        self.assertGreater(autoexec, len(copy_lines) - 3)
-        self.assertGreater(config, len(copy_lines) - 3)
+        config = next(
+            i for i, line in enumerate(primary_copy_lines) if "CONFIG.SYS" in line
+        )
+        self.assertGreater(autoexec, len(primary_copy_lines) - 3)
+        self.assertGreater(config, len(primary_copy_lines) - 3)
+
+        verify_script = (self.package / "VERIFY.BAT").read_text(encoding="ascii")
+        verify_lines = [
+            line
+            for line in verify_script.splitlines()
+            if line.startswith("C:\\PWMINST\\PWCOPY.COM /C C:\\PWMINST\\PAYLOAD")
+        ]
+        self.assertEqual(len(primary_copy_lines), len(verify_lines))
+        for line in verify_lines:
+            parts = line.split()
+            self.assertEqual(4, len(parts), line)
+            source = parts[2].removeprefix("C:\\PWMINST\\").replace("\\", "/")
+            actual = zlib.crc32((self.package / source).read_bytes()) & 0xFFFFFFFF
+            self.assertEqual(actual, int(parts[3], 16), line)
+
+    def test_copy_failures_are_named_and_retried_once(self) -> None:
+        script = (self.package / "FILES.BAT").read_text(encoding="ascii")
+        self.assertIn("ECHO Installing D:\\PW\\PW.BAT", script)
+        self.assertIn("ECHO Retrying D:\\PW\\PW.BAT once.", script)
+        self.assertIn(":OK000", script)
+        self.assertIn(
+            "PWCOPY.COM /D D:\\PW\\SYSTEM\\IBMZIPC2.ZB", script
+        )
+        self.assertLess(
+            script.index("PWCOPY.COM /D D:\\PW\\SYSTEM\\IBMZIPC2.ZB"),
+            script.index("ECHO Installing D:\\"),
+        )
+
+        copier = (self.package / "PWCOPY.COM").read_bytes()
+        for message in (
+            b"Stage: read and CRC-check source",
+            b"Stage: create target",
+            b"Stage: read back and compare target",
+            b"Source: ",
+            b"Target: ",
+        ):
+            self.assertIn(message, copier)
 
     def test_backup_reserves_documented_cf_working_space(self) -> None:
         source = (PROJECT_ROOT / "installer" / "dos" / "pwimage.asm").read_text(
@@ -232,6 +279,7 @@ class CFInstallerTests(unittest.TestCase):
         self.assertTrue(names)
         self.assertTrue(all(name.startswith("PWMINST/") for name in names))
         self.assertIn("PWMINST/INSTALL.BAT", names)
+        self.assertIn("PWMINST/VERIFY.BAT", names)
         self.assertIn("PWMINST/RESTORE.BAT", names)
         self.assertIn("PWMINST/FORCERST.BAT", names)
 

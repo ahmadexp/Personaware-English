@@ -83,11 +83,12 @@ if (
 ):
     raise SystemExit("CF payload lacks the translated DOS/V status resource")
 
-installer = Path("dist/PersonaWare-English-2.0-CF-Installer.zip")
+installer = Path("dist/PersonaWare-English-2.0.1-CF-Installer.zip")
 with zipfile.ZipFile(installer) as archive:
     names = set(archive.namelist())
 for required_name in (
     "PWMINST/INSTALL.BAT",
+    "PWMINST/VERIFY.BAT",
     "PWMINST/RESTORE.BAT",
     "PWMINST/FORCERST.BAT",
     "PWMINST/RESTDATA.BAT",

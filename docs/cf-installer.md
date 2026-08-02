@@ -23,7 +23,7 @@ installer, recovery image, and working files.
 
 ## Prepare the CF
 
-1. Download `dist/PersonaWare-English-2.0-CF-Installer.zip`.
+1. Download `dist/PersonaWare-English-2.0.1-CF-Installer.zip`.
 2. Verify it against `dist/SHA256SUMS.txt`.
 3. Unzip it onto the CF root. After boot, the directory must be
    `C:\PWMINST`.
@@ -34,6 +34,11 @@ installer, recovery image, and working files.
 Stop if the CF is not `C:` or PersonaWare is not `D:`. The installer uses
 explicit drive letters and refuses to install when `D:\PW\PW.BAT` is missing.
 
+If an earlier 2.0 installation attempt already created `D-ORIG.IMG`, do not
+delete `PWMINST`. Extract 2.0.1 over the existing directory and replace files
+when prompted. This updates the installer and payload while preserving the
+recovery image, checksum, and saved user databases. Run `INSTALL.BAT` again.
+
 ## Install PersonaWare English
 
 At the DOS prompt, run:
@@ -42,7 +47,11 @@ At the DOS prompt, run:
 C:\PWMINST\INSTALL.BAT
 ```
 
-The installer performs three ordered steps:
+Before the three installation steps, the installer reads every payload file
+from the CF and validates its CRC-32. A damaged or incomplete extraction is
+therefore detected before the internal PersonaWare volume is changed.
+
+The installer then performs three ordered steps:
 
 1. `PWIMAGE.COM` reads every sector of the logical DOS `D:` volume into
    `C:\PWMINST\D-ORIG.IMG`. It records the sector count, bytes per sector,
@@ -53,9 +62,10 @@ The installer performs three ordered steps:
 3. The complete English PersonaWare payload, active U.S. English DOS locale
    configuration, and translated DOS/V input-status resource are installed.
    Each source CRC-32 is checked before its destination is changed, then every
-   destination is reopened and compared byte for byte. The boot configuration
-   is installed last, and the obsolete Japanese-only postal database is
-   removed.
+   destination is reopened and compared byte for byte. The obsolete
+   Japanese-only postal database is removed first to release working space,
+   while the boot configuration is installed last. A failed copy is retried
+   once before installation stops.
 
 The installer never overwrites an existing recovery image. If both recovery
 files already exist, it verifies the complete image and current `D:` identity.
@@ -155,11 +165,13 @@ volume image remains the authoritative long-term recovery copy.
   If power failed during the initial imaging step, do not erase the old CF.
   Prepare another installer CF only after confirming that `D:` was never
   modified.
-- Payload corruption on the CF: the affected source CRC check fails before its
-  destination is changed.
+- Payload corruption on the CF: preflight names the affected source file and
+  stops before backup or installation begins.
 - File verification failure during installation: copying stops and the full
-  original recovery image remains on the CF. DOS file replacement is not
-  atomic, so use the full restore after any failed installation.
+  original recovery image remains on the CF. The utility reports the failed
+  stage, source, and destination and retries the copy once. DOS file
+  replacement is not atomic, so use the full restore after any failed
+  installation.
 - Missing, altered, or truncated recovery image: restore is blocked.
 - Wrong `D:` volume size or serial: restore is blocked to protect another
   drive.

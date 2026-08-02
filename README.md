@@ -24,7 +24,7 @@ original Power Management launcher entry remains in place.
 | Item | Value |
 | --- | --- |
 | Bootable image | [`dist/Personaware-English-2.0.img`](dist/Personaware-English-2.0.img) |
-| DOS CF installer | [`dist/PersonaWare-English-2.0-CF-Installer.zip`](dist/PersonaWare-English-2.0-CF-Installer.zip) |
+| DOS CF installer | [`dist/PersonaWare-English-2.0.1-CF-Installer.zip`](dist/PersonaWare-English-2.0.1-CF-Installer.zip) |
 | Screenshot archive | [`dist/PersonaWare-English-2.0-Screenshots.zip`](dist/PersonaWare-English-2.0-Screenshots.zip) |
 | Format | 4 MiB raw MBR disk image with an active FAT partition |
 | Boot environment | PC DOS 7, U.S. English code page 437 |
@@ -35,7 +35,7 @@ SHA-256 checksums:
 
 ```text
 d66065cf935c4ed266660c13594f0cf1e0348391994c97b7c9818a5ebe2a91d0  Personaware-English-2.0.img
-fcab04abdd9f906a306c366e31460ef35d91c20a11427df6e7a3318e25aacaac  PersonaWare-English-2.0-CF-Installer.zip
+6a1d16ad8d146bae16db15fbe51c193b41a00d5899008ac043441bd267bc1e64  PersonaWare-English-2.0.1-CF-Installer.zip
 8e09e1a3995b09aa598101e272948c16ae51b2ac508db03eccfe918a0fc12442  PersonaWare-English-2.0-Screenshots.zip
 ```
 
@@ -52,7 +52,7 @@ mode.
 
 ## Install from a bootable DOS CF
 
-Unzip `PersonaWare-English-2.0-CF-Installer.zip` onto the root of a DOS-bootable
+Unzip `PersonaWare-English-2.0.1-CF-Installer.zip` onto the root of a DOS-bootable
 CF so it creates `C:\PWMINST`. Boot from the CF, confirm that the existing
 PersonaWare installation is `D:\PW`, then run:
 
@@ -60,13 +60,22 @@ PersonaWare installation is `D:\PW`, then run:
 C:\PWMINST\INSTALL.BAT
 ```
 
-Before changing `D:`, the installer saves every sector of the logical `D:`
+Before changing `D:`, the installer CRC-checks every payload file. It then
+saves every sector of the logical `D:`
 volume to `C:\PWMINST\D-ORIG.IMG`, creates a size, volume-identity, and CRC-32
 sidecar, then reopens and reads the entire image back from the CF. It refuses
 to overwrite an existing recovery image. Each payload CRC is checked before
 copying, and every installed file is then read back and compared. It also
 preserves the four current PersonaWare databases in `C:\PWMINST\USERDATA` and
-can safely resume an interrupted installation from a verified image.
+can safely resume an interrupted installation from a verified image. Installer
+2.0.1 also reports the exact failing stage and paths, retries transient copy
+failures once, and tolerates DOS filesystems that cannot preserve optional
+timestamps or attributes.
+
+To retry after a failed 2.0 installation, keep the existing `PWMINST` directory
+and extract 2.0.1 over it, replacing files when prompted. Do not delete
+`D-ORIG.IMG`, `D-ORIG.CRC`, or `USERDATA`; the installer verifies and reuses
+them.
 
 To restore the complete original `D:` volume, boot from the same CF and run:
 

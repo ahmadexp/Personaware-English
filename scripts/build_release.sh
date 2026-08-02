@@ -16,7 +16,7 @@ from pathlib import Path
 directory = Path("dist")
 names = (
     "Personaware-English-2.0.img",
-    "PersonaWare-English-2.0-CF-Installer.zip",
+    "PersonaWare-English-2.0.1-CF-Installer.zip",
     "PersonaWare-English-2.0-Screenshots.zip",
 )
 lines = []
