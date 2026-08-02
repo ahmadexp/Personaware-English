@@ -13,9 +13,9 @@ import zlib
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_IMAGE = PROJECT_ROOT / "dist" / "Personaware-English.img"
-DEFAULT_OUTPUT = PROJECT_ROOT / "build" / "cf-installer"
-DEFAULT_ZIP = PROJECT_ROOT / "dist" / "PersonaWare-English-CF-Installer.zip"
+DEFAULT_IMAGE = PROJECT_ROOT / "dist" / "Personaware-English-2.0.img"
+DEFAULT_OUTPUT = PROJECT_ROOT / "build" / "cf-installer-v2"
+DEFAULT_ZIP = PROJECT_ROOT / "dist" / "PersonaWare-English-2.0-CF-Installer.zip"
 OUTPUT_MARKER = ".personaware-cf-installer-output"
 DOS_NEWLINE = "\r\n"
 USER_DATABASES = ("DEFAULT.ADD", "DEFAULT.NTD", "DEFAULT.SCD", "DEFAULT.TDD")

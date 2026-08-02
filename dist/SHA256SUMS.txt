@@ -1,2 +1,3 @@
-8bbec705277f2da369875a4c10edbb668f5245a3bbac32c3d7a20147e17dd4f8  Personaware-English.img
-6888272e7ecdb42dd0cdbfaca4f36066ce737f1ceecdf140b249507d69cbb3a3  PersonaWare-English-CF-Installer.zip
+d40690b4efa1ac2081c30a2609ccf7f9c492bc9ffe00ba9680792e1baddd535e  Personaware-English-2.0.img
+4e4e70b4dc186e7e5e34005d2b0108fc3abba949c8196e40b4e2770fb1c26f11  PersonaWare-English-2.0-CF-Installer.zip
+2a4431ea11f7996972a9c2e8d52622bb9269c599bb9be0013b0b22a591a3a3f7  PersonaWare-English-2.0-Screenshots.zip

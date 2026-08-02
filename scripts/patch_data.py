@@ -295,6 +295,17 @@ def replace_notebook_readme(path: Path) -> None:
             "be lost after Ctrl+Alt+Del, a forced power-off, or an emulator "
             "reset.",
         ],
+        [
+            "",
+            "",
+            "11. Launcher Photos",
+            "README",
+            "Open Photo Manager from the launcher. Use F8 or Page Down if an "
+            "item is beyond the first page. Import a prepared 190x250, "
+            "16-color BMP, then assign it to one of the five launcher picture "
+            "slots. Remove deletes only a gallery copy. Restore recovers the "
+            "original pictures.",
+        ],
     ]
     path.write_bytes(csv_bytes([header, *notes]))
 

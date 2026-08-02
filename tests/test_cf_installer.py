@@ -20,7 +20,7 @@ class CFInstallerTests(unittest.TestCase):
         cls.output = root / "output"
         cls.archive = root / "installer.zip"
         cls.package = build_cf_installer(
-            PROJECT_ROOT / "dist" / "Personaware-English.img",
+            PROJECT_ROOT / "dist" / "Personaware-English-2.0.img",
             cls.output,
             cls.archive,
         )
@@ -44,6 +44,13 @@ class CFInstallerTests(unittest.TestCase):
             "SHA256.TXT",
         ):
             self.assertTrue((self.package / name).is_file(), name)
+        for name in (
+            "PAYLOAD/PW/PWPHOTO.COM",
+            "PAYLOAD/PW/PWPHOTO.TXT",
+            "PAYLOAD/PW/PHOTO/STOCK1.BMP",
+            "PAYLOAD/PW/PHOTO/STOCK5.BMP",
+        ):
+            self.assertTrue((self.package / name).is_file(), name)
 
     def test_payload_boots_normally_as_c_and_cf_launcher_targets_d(self) -> None:
         pw_batch = (self.package / "PAYLOAD" / "PW" / "PW.BAT").read_bytes()
@@ -63,6 +70,9 @@ class CFInstallerTests(unittest.TestCase):
         self.assertIn(b"PATH C:\\;C:\\DOS", autoexec)
         self.assertNotIn(b"PWMODERN", autoexec)
         self.assertIn(b"COUNTRY=001,437", config)
+        self.assertIn(b"DEVICEHIGH=C:\\DOS\\$FONT.SYS", config)
+        self.assertNotIn(b"REM DEVICEHIGH=C:\\DOS\\$FONT.SYS", config)
+        self.assertIn(b"REM DEVICEHIGH=C:\\DOS\\$DISP.SYS", config)
         self.assertIn(b"REM DEVICEHIGH=C:\\DOS\\$IAS.SYS", config)
         self.assertIn(b"REM INSTALL=C:\\DOS\\IBMMKKV.EXE", config)
         self.assertIn(b"Specify /G=1 for $IAS.SYS. [Enter]", ias)
@@ -182,7 +192,7 @@ class CFInstallerTests(unittest.TestCase):
     def test_builder_refuses_dangerous_output_directories(self) -> None:
         with self.assertRaises(ValueError):
             build_cf_installer(
-                PROJECT_ROOT / "dist" / "Personaware-English.img",
+                PROJECT_ROOT / "dist" / "Personaware-English-2.0.img",
                 Path.home(),
                 self.archive,
             )
@@ -191,7 +201,7 @@ class CFInstallerTests(unittest.TestCase):
         (unrecognized / "keep.txt").write_text("keep\n", encoding="ascii")
         with self.assertRaises(ValueError):
             build_cf_installer(
-                PROJECT_ROOT / "dist" / "Personaware-English.img",
+                PROJECT_ROOT / "dist" / "Personaware-English-2.0.img",
                 unrecognized,
                 self.archive,
             )

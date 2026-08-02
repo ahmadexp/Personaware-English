@@ -5,7 +5,9 @@ repository_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$repository_root"
 
 ./scripts/build_dos.sh
+python3 scripts/build_enhanced_image.py
 python3 scripts/build_cf_installer.py
+python3 scripts/build_screenshot_archive.py
 
 python3 - <<'PY'
 import hashlib
@@ -13,8 +15,9 @@ from pathlib import Path
 
 directory = Path("dist")
 names = (
-    "Personaware-English.img",
-    "PersonaWare-English-CF-Installer.zip",
+    "Personaware-English-2.0.img",
+    "PersonaWare-English-2.0-CF-Installer.zip",
+    "PersonaWare-English-2.0-Screenshots.zip",
 )
 lines = []
 for name in names:

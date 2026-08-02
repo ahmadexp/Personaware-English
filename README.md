@@ -15,30 +15,33 @@
 PersonaWare English replaces the Japanese application interface, warnings,
 help panels, launcher metadata, bundled data, and active DOS environment with
 concise English text while preserving the original software layout and PC 110
-hardware behavior.
+hardware behavior. Version 2.0 also adds a native launcher Photo Manager with
+protected original pictures and tools for preparing modern image files.
 
 ## Get the image
 
 | Item | Value |
 | --- | --- |
-| Bootable image | [`dist/Personaware-English.img`](dist/Personaware-English.img) |
-| DOS CF installer | [`dist/PersonaWare-English-CF-Installer.zip`](dist/PersonaWare-English-CF-Installer.zip) |
+| Bootable image | [`dist/Personaware-English-2.0.img`](dist/Personaware-English-2.0.img) |
+| DOS CF installer | [`dist/PersonaWare-English-2.0-CF-Installer.zip`](dist/PersonaWare-English-2.0-CF-Installer.zip) |
+| Screenshot archive | [`dist/PersonaWare-English-2.0-Screenshots.zip`](dist/PersonaWare-English-2.0-Screenshots.zip) |
 | Format | 4 MiB raw MBR disk image with an active FAT partition |
 | Boot environment | PC DOS 7, U.S. English code page 437 |
 | Keyboard | Original PC 110 Japanese keyboard mapping |
+| Launcher gallery | 9 user pictures, 5 assignable picture slots |
 
 SHA-256 checksums:
 
 ```text
-8bbec705277f2da369875a4c10edbb668f5245a3bbac32c3d7a20147e17dd4f8  Personaware-English.img
-6888272e7ecdb42dd0cdbfaca4f36066ce737f1ceecdf140b249507d69cbb3a3  PersonaWare-English-CF-Installer.zip
+d40690b4efa1ac2081c30a2609ccf7f9c492bc9ffe00ba9680792e1baddd535e  Personaware-English-2.0.img
+4e4e70b4dc186e7e5e34005d2b0108fc3abba949c8196e40b4e2770fb1c26f11  PersonaWare-English-2.0-CF-Installer.zip
+2a4431ea11f7996972a9c2e8d52622bb9269c599bb9be0013b0b22a591a3a3f7  PersonaWare-English-2.0-Screenshots.zip
 ```
 
 Verify the download before booting:
 
 ```sh
-cd dist
-shasum -a 256 -c SHA256SUMS.txt
+shasum -a 256 -c dist/SHA256SUMS.txt
 ```
 
 Boot a copy of the image on an IBM PC 110 or a compatible emulator. The final
@@ -48,7 +51,7 @@ mode.
 
 ## Install from a bootable DOS CF
 
-Unzip `PersonaWare-English-CF-Installer.zip` onto the root of a DOS-bootable
+Unzip `PersonaWare-English-2.0-CF-Installer.zip` onto the root of a DOS-bootable
 CF so it creates `C:\PWMINST`. Boot from the CF, confirm that the existing
 PersonaWare installation is `D:\PW`, then run:
 
@@ -86,9 +89,66 @@ FAT16, use 512-byte sectors, contain at most 65,535 sectors, and run on a
 [complete CF installation and recovery guide](docs/cf-installer.md) before
 using it on hardware.
 
+## Launcher Photo Manager
+
+Photo Manager is a normal PersonaWare launcher application. It keeps the
+original five launcher pictures in `C:\PW\PHOTO\STOCK1.BMP` through
+`STOCK5.BMP`, and stores up to nine user pictures as `USR1.BMP` through
+`USR9.BMP`. From the manager you can list and import pictures, assign one to any
+launcher picture slot, remove gallery copies, or restore one or all original
+pictures. Restart PersonaWare after assigning or restoring a slot.
+
+The launcher supports more applications than fit on one screen. Press F8 or
+Page Down to reach a later item, and F7 or Page Up to go back. Version 2.0 puts
+Photo Manager on the first page; Power Management is retained on the next
+page.
+
+PersonaWare requires an uncompressed 190x250, 16-color Windows BMP. The host
+tool converts PNG, JPEG, GIF, TIFF, BMP, and other formats supported by
+ImageMagick:
+
+```sh
+python3 tools/personaware_photos.py prepare family.jpg USR1.BMP
+```
+
+Install ImageMagick first with `brew install imagemagick` on macOS or your
+distribution's `imagemagick` package on Linux. The tool validates the final BMP
+header, dimensions, palette depth, compression, and exact file size.
+
+It can also safely manage a disk image while PersonaWare and the emulator or
+MiSTer core are stopped:
+
+```sh
+# Inspect the nine-picture gallery.
+python3 tools/personaware_photos.py list Personaware-English-2.0.img
+
+# Convert, add, and immediately assign a photo to launcher slot 3.
+python3 tools/personaware_photos.py add Personaware-English-2.0.img family.jpg \
+  --slot 3 --backup Personaware-English-2.0.before-photos.img
+
+# Change assignments, remove a gallery copy, or restore the stock pictures.
+python3 tools/personaware_photos.py assign Personaware-English-2.0.img 1 5
+python3 tools/personaware_photos.py remove Personaware-English-2.0.img 1
+python3 tools/personaware_photos.py restore Personaware-English-2.0.img
+```
+
+The manager never deletes an active slot when removing a gallery copy. The
+host tool refuses to overwrite an existing backup. Do not edit a disk image
+that is mounted or currently running.
+
 ## Screenshots
 
 <table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/images/photo-manager-launcher.png" alt="Photo Manager in the PersonaWare launcher"><br>
+      <sub>Native Photo Manager launcher item</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/images/photo-manager-menu.png" alt="PersonaWare Launcher Photo Manager menu"><br>
+      <sub>Add, remove, assign, and restore launcher pictures</sub>
+    </td>
+  </tr>
   <tr>
     <td width="50%" align="center">
       <img src="docs/images/launcher.png" alt="English PersonaWare launcher"><br>
@@ -160,6 +220,14 @@ using it on hardware.
   translated.
 - PC 110 keyboard mapping retained.
 
+### Version 2.0 additions
+
+- Native 16-bit DOS Photo Manager integrated as the 17th launcher application.
+- Nine-picture user gallery, five assignable launcher slots, and protected
+  copies of every original picture.
+- Modern host-side converter and image-management commands.
+- English Notebook and DOS help covering launcher paging and photo management.
+
 The Japanese-only postal lookup database was removed. Address Book remains
 usable through manual postal and address entry, and its help explains the
 change.
@@ -175,8 +243,12 @@ The release image passed structural, static, and runtime checks:
   as valid DOS executables.
 - Audited translated data and scoped display-string regions for remaining
   Japanese UI text.
+- Confirmed that the remaining CP932 scanner hits are inactive DOS/V and IME
+  resource banks, character-conversion tables, or binary false positives.
 - Booted to the launcher and exercised Address Book warnings and help, E-Mail
   help and setup, FAX help, the DOS launcher, and an English command error.
+- Booted the 17-item launcher, verified native paging, ran Photo Manager, listed
+  an empty gallery, and restored all five original pictures.
 - Rebuilt and tested the DOS CF installer, recovery image metadata, backup-first
   ordering, verified resume, payload CRCs, complete image read-back, target
   identity checks, boot-sector-last restore, emergency recovery, and the
@@ -197,8 +269,9 @@ likely user-facing Japanese.
 Internal CP932 conversion tables and the Address Book kana/romanization lookup
 table are intentionally preserved because they implement text conversion and
 name lookup rather than visible UI. IBM PC DOS files also retain dormant
-Japanese resource copies, but the active boot locale selects their English
-resources.
+Japanese DOS/V and IME resource copies. The active English boot configuration
+does not load them. All reachable PersonaWare application UI, launcher
+metadata, bundled starter data, help, and active DOS startup text are English.
 
 ## Repository layout
 
@@ -206,14 +279,19 @@ resources.
 dist/                         Bootable image, CF installer, and SHA-256 manifest
 docs/images/                  Runtime screenshots from the finished build
 installer/dos/                16-bit backup, restore, and verified-copy sources
+utilities/dos/pwphoto.asm     Native PersonaWare launcher Photo Manager
 resources/name-translations.tsv
                               Reviewed city and dial-directory names
 scripts/audit_japanese.py     CP932-aware Japanese text scanner
 scripts/build_cf_installer.py Deterministic DOS CF package builder
+scripts/build_enhanced_image.py
+                              Photo Manager image integration
+scripts/merge_user_data.py    Host-specific user database preservation
 scripts/patch_binaries.py     Fixed-slot executable translations
 scripts/patch_boot.py         English locale and DOS/V startup patches
 scripts/patch_data.py         Data, help, and launcher translations
 tests/                        Installer packaging and recovery-safety tests
+tools/personaware_photos.py   Modern picture converter and disk-image manager
 ```
 
 The patch scripts expect legally obtained source files from the original media

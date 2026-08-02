@@ -25,6 +25,12 @@ def patch_config(source: Path, destination: Path) -> None:
     )
     data = replace_once(
         data,
+        b"DEVICEHIGH=C:\\DOS\\$DISP.SYS /MSG=OFF\r\n",
+        b"REM DEVICEHIGH=C:\\DOS\\$DISP.SYS /MSG=OFF\r\n",
+        source.name,
+    )
+    data = replace_once(
+        data,
         b"DEVICEHIGH=C:\\DOS\\$IAS.SYS\r\n",
         b"REM DEVICEHIGH=C:\\DOS\\$IAS.SYS\r\n",
         source.name,

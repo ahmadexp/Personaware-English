@@ -2,6 +2,36 @@
 
 All notable project changes are documented here.
 
+## 2.0.0 - 2026-08-02
+
+### Added
+
+- Native PersonaWare Photo Manager as an additional launcher application.
+- Nine-picture user gallery with add, list, assign, and remove operations.
+- Protected backups and one-slot or all-slot restoration for the five original
+  launcher pictures.
+- ImageMagick-based host tool for converting modern pictures to exact 190x250,
+  uncompressed 4-bit BMP files and managing an offline disk image.
+- English Notebook and DOS help for launcher paging and picture management.
+- Clean English boot without loading the inactive Japanese DOS/V display
+  driver or printing its code-page warning.
+- Automated image, converter, gallery, assignment, removal, restoration, and
+  source-preservation tests.
+
+### Verified
+
+- The 17-item launcher boots and pages correctly in the PC 110 QEMU model.
+- Photo Manager runs on PC DOS, lists the gallery, and restores all stock
+  pictures.
+- All reachable PersonaWare UI, help, launcher metadata, starter data, and
+  active DOS startup text are English.
+
+### Preserved
+
+- Dormant Japanese DOS/V and IME resources used only by the disabled Japanese
+  boot path.
+- Internal CP932 conversion and kana lookup tables required for compatibility.
+
 ## 1.1.0 - 2026-08-01
 
 ### Added

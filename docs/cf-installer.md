@@ -23,7 +23,7 @@ installer, recovery image, and working files.
 
 ## Prepare the CF
 
-1. Download `dist/PersonaWare-English-CF-Installer.zip`.
+1. Download `dist/PersonaWare-English-2.0-CF-Installer.zip`.
 2. Verify it against `dist/SHA256SUMS.txt`.
 3. Unzip it onto the CF root. After boot, the directory must be
    `C:\PWMINST`.
