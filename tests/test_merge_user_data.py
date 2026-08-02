@@ -16,7 +16,9 @@ class MergeUserDataTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory(prefix="pwmerge-tests-")
         self.root = Path(self.temporary.name)
-        self.existing = PROJECT_ROOT / "dist" / "Personaware-English.img"
+        self.existing = (
+            PROJECT_ROOT / "resources" / "base" / "Personaware-English-1.0.img"
+        )
         self.release = PROJECT_ROOT / "dist" / "Personaware-English-2.0.img"
 
     def tearDown(self) -> None:

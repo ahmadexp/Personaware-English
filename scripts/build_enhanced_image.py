@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SOURCE = PROJECT_ROOT / "dist" / "Personaware-English.img"
+DEFAULT_SOURCE = PROJECT_ROOT / "resources" / "base" / "Personaware-English-1.0.img"
 DEFAULT_OUTPUT = PROJECT_ROOT / "dist" / "Personaware-English-2.0.img"
 PARTITION_OFFSET = 16384
 

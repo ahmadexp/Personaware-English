@@ -280,6 +280,7 @@ installer/dos/                16-bit backup, restore, and verified-copy sources
 utilities/dos/pwphoto.asm     Native PersonaWare DOS Photo Manager
 resources/name-translations.tsv
                               Reviewed city and dial-directory names
+resources/base/                Version 1 build input used to reproduce 2.0
 scripts/audit_japanese.py     CP932-aware Japanese text scanner
 scripts/build_cf_installer.py Deterministic DOS CF package builder
 scripts/build_enhanced_image.py

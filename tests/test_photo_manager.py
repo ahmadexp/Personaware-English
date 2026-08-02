@@ -31,7 +31,9 @@ class PhotoManagerTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.temporary = tempfile.TemporaryDirectory(prefix="pwphoto-tests-")
         cls.root = Path(cls.temporary.name)
-        cls.source_image = PROJECT_ROOT / "dist" / "Personaware-English.img"
+        cls.source_image = (
+            PROJECT_ROOT / "resources" / "base" / "Personaware-English-1.0.img"
+        )
         cls.source_hash = hashlib.sha256(cls.source_image.read_bytes()).hexdigest()
         cls.enhanced_image = cls.root / "enhanced.img"
         build_enhanced_image(cls.source_image, cls.enhanced_image)
