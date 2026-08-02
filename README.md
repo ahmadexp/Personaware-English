@@ -35,7 +35,7 @@ SHA-256 checksums:
 
 ```text
 d66065cf935c4ed266660c13594f0cf1e0348391994c97b7c9818a5ebe2a91d0  Personaware-English-2.0.img
-6a1d16ad8d146bae16db15fbe51c193b41a00d5899008ac043441bd267bc1e64  PersonaWare-English-2.0.1-CF-Installer.zip
+28400e899fbd0ce6684a657725f9f55f9e8fe771d23a2e2315abd644c8f1fbc6  PersonaWare-English-2.0.1-CF-Installer.zip
 8e09e1a3995b09aa598101e272948c16ae51b2ac508db03eccfe918a0fc12442  PersonaWare-English-2.0-Screenshots.zip
 ```
 

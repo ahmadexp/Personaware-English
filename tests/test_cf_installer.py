@@ -89,6 +89,10 @@ class CFInstallerTests(unittest.TestCase):
         self.assertIn("IF EXIST C:\\PWMINST\\D-ORIG.IMG GOTO VERIFYBACKUP", script)
         self.assertIn("C:\\PWMINST\\PWIMAGE.COM /V", script)
         self.assertIn("IF NOT EXIST D:\\PW\\PW.BAT GOTO NOTARGET", script)
+        self.assertLess(
+            script.index("IF EXIST C:\\PWMINST\\D-ORIG.IMG GOTO VERIFYBACKUP"),
+            script.index("IF NOT EXIST D:\\PW\\PW.BAT GOTO NOTARGET"),
+        )
         self.assertIn(
             f"PWCOPY.COM /C C:\\PWMINST\\INSTALL.OK {STATE_MARKER_CRC:08X}",
             script,
