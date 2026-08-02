@@ -4,12 +4,16 @@ set -eu
 repository_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$repository_root"
 
-for command in python3 nasm mcopy mtype mdir magick; do
+for command in python3 nasm mcopy mtype mdir; do
   if ! command -v "$command" >/dev/null 2>&1; then
     echo "Missing required command: $command" >&2
     exit 1
   fi
 done
+if ! command -v magick >/dev/null 2>&1 && ! command -v convert >/dev/null 2>&1; then
+  echo "Missing required command: ImageMagick (magick or convert)" >&2
+  exit 1
+fi
 
 python3 -m py_compile scripts/*.py tests/*.py tools/*.py
 ./scripts/build_dos.sh
