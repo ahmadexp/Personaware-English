@@ -2,6 +2,31 @@
 
 All notable project changes are documented here.
 
+## 2.0.5 - 2026-08-03
+
+### Added
+
+- Verified factory-layout installer for the tested 7,776-sector PC110
+  PersonaWare volume with serial `3F4B-1004`.
+- Redistributable modern fourteen-picture pack with complete source and
+  license credits, including an original Nitrous Blue Focus RS photograph
+  and a rear-view alternate.
+
+### Fixed
+
+- Recreated the original IBM PC DOS boot layout from the verified PowerQuest
+  image, keeping `IBMBIO.COM` and `IBMDOS.COM` first, contiguous, and booting
+  the internal disk as BIOS drive `80h` after removal of the installer CF.
+- Remapped imported photograph colors and pixel indexes to PersonaWare's fixed
+  sixteen-color IBM palette, eliminating false color and rainbow artifacts.
+
+### Verified
+
+- The factory-layout installer boots PersonaWare on physical IBM PC110
+  hardware after the installer CF is removed.
+- The corrected image set boots on both MiSTer test units with zero POST
+  errors, correct picture colors, and the lower LCD status text intact.
+
 ## 2.0.0 - 2026-08-02
 
 ### Added

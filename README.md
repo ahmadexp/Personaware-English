@@ -25,6 +25,8 @@ original Power Management launcher entry remains in place.
 | --- | --- |
 | Bootable image | [`dist/Personaware-English-2.0.img`](dist/Personaware-English-2.0.img) |
 | Physical PC110 installer | Build a machine-specific package from `D-ORIG.IMG`; see below |
+| Verified factory-layout PC110 installer | [`PersonaWare-English-2.0.5-PC110-Factory-Layout-Installer.zip`](https://github.com/ahmadexp/Personaware-English/releases/latest/download/PersonaWare-English-2.0.5-PC110-Factory-Layout-Installer.zip) |
+| Modern 14-picture pack | [`PersonaWare-Modern-14-Picture-Pack.zip`](https://github.com/ahmadexp/Personaware-English/releases/latest/download/PersonaWare-Modern-14-Picture-Pack.zip) |
 | Legacy 8,160-sector hardware installer | [`dist/PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip`](dist/PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip) |
 | Legacy file-level installer | [`dist/PersonaWare-English-2.0.1-CF-Installer.zip`](dist/PersonaWare-English-2.0.1-CF-Installer.zip) |
 | Screenshot archive | [`dist/PersonaWare-English-2.0-Screenshots.zip`](dist/PersonaWare-English-2.0-Screenshots.zip) |
@@ -40,6 +42,8 @@ d66065cf935c4ed266660c13594f0cf1e0348391994c97b7c9818a5ebe2a91d0  Personaware-En
 fb47927945ad175842f1bb5420504ac68be99432b39587192dbd280a22eabfe8  PersonaWare-English-2.0.1-CF-Installer.zip
 2c3a2fde55bcd5bd7ffd37f87bb757b355ebd9c3bb8111fb6659600089ca58ad  PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip
 8e09e1a3995b09aa598101e272948c16ae51b2ac508db03eccfe918a0fc12442  PersonaWare-English-2.0-Screenshots.zip
+20a8f3ad8c62cf9d746094d1b40e452e118c50add18a569b38a6816ca566b236  PersonaWare-English-2.0.5-PC110-Factory-Layout-Installer.zip
+84d6f8d4e8e9a18715bf950388522b4e5c8f2ec035924969153d4841fb7c5fa7  PersonaWare-Modern-14-Picture-Pack.zip
 ```
 
 Verify the download before booting:
@@ -99,6 +103,13 @@ memory. Remove the CF and restart immediately. See the
 The prebuilt 2.0.2 hardware archive is a legacy fixed-layout package for an
 8,160-sector volume. It safely refuses other sizes and must not be used as a
 universal PC110 installer.
+
+The prebuilt 2.0.5 factory-layout package was built and hardware-tested for a
+7,776-sector PersonaWare volume with serial `3F4B-1004`. It preserves the IBM
+PC DOS system-file layout and uses BIOS drive `80h` after the installer CF is
+removed. Its installer validates the target identity and refuses a different
+volume. Build a fresh machine-specific package for any PC110 whose captured
+`D-ORIG.IMG` does not match those values.
 
 ## Legacy file-level installer
 
@@ -161,9 +172,10 @@ pictures. Restart PersonaWare after assigning or restoring a slot.
 Photo Manager is deliberately a DOS command rather than a seventeenth launcher
 entry. This keeps DOS and Power Management in their original launcher slots.
 
-PersonaWare requires an uncompressed 190x250, 16-color Windows BMP. The host
-tool converts PNG, JPEG, GIF, TIFF, BMP, and other formats supported by
-ImageMagick:
+PersonaWare requires an uncompressed 190x250, 16-color Windows BMP. Its
+launcher uses a fixed IBM-style palette, so the host tool remaps both colors
+and palette indexes to that exact palette. It converts PNG, JPEG, GIF, TIFF,
+BMP, and other formats supported by ImageMagick:
 
 ```sh
 python3 tools/personaware_photos.py prepare family.jpg USR1.BMP

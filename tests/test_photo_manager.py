@@ -12,6 +12,7 @@ from scripts.build_enhanced_image import (
     disable_inactive_dosv_driver,
 )
 from tools.personaware_photos import (
+    PERSONAWARE_PALETTE,
     add_photo,
     assign_photo,
     copy_from_image,
@@ -106,6 +107,15 @@ class PhotoManagerTests(unittest.TestCase):
         prepare_photo(source, output)
         validate_photo_bytes(output.read_bytes())
         self.assertEqual(24118, output.stat().st_size)
+        data = output.read_bytes()
+        palette = tuple(
+            (red, green, blue)
+            for blue, green, red, _ in (
+                data[54 + index * 4 : 58 + index * 4]
+                for index in range(16)
+            )
+        )
+        self.assertEqual(PERSONAWARE_PALETTE, palette)
 
     def test_add_assign_remove_and_restore_workflow(self) -> None:
         working = self.root / "workflow.img"

@@ -13,6 +13,24 @@ from pathlib import Path
 WIDTH = 190
 HEIGHT = 250
 PARTITION_OFFSET = 16384
+PERSONAWARE_PALETTE = (
+    (0, 0, 0),
+    (128, 0, 0),
+    (0, 128, 0),
+    (128, 128, 0),
+    (0, 0, 128),
+    (128, 0, 128),
+    (0, 128, 128),
+    (128, 128, 128),
+    (192, 192, 192),
+    (255, 0, 0),
+    (0, 255, 0),
+    (255, 255, 0),
+    (0, 0, 255),
+    (255, 0, 255),
+    (0, 255, 255),
+    (255, 255, 255),
+)
 SLOT_FILES = (
     "P_KI01.BMP",
     "P_YAMA01.BMP",
@@ -72,7 +90,10 @@ def validate_photo_bytes(data: bytes) -> None:
         raise ValueError("BMP must be uncompressed")
 
 
-def normalize_indexed_bmp(data: bytes) -> bytes:
+def normalize_indexed_bmp(
+    data: bytes,
+    canonical_palette: tuple[tuple[int, int, int], ...] | None = None,
+) -> bytes:
     """Normalize ImageMagick's 1/4/8-bit BMP to PersonaWare's fixed 4-bit form."""
     if len(data) < 54 or data[:2] != b"BM":
         raise ValueError("ImageMagick did not produce a Windows BMP")
@@ -93,8 +114,35 @@ def normalize_indexed_bmp(data: bytes) -> bytes:
     palette_end = palette_start + palette_count * 4
     if palette_end > pixel_offset or pixel_offset > len(data):
         raise ValueError("BMP palette or pixel offset is invalid")
-    palette = bytearray(data[palette_start:palette_end])
-    palette.extend(b"\0" * (64 - len(palette)))
+    source_palette = []
+    for index in range(palette_count):
+        blue, green, red, _ = data[
+            palette_start + index * 4 : palette_start + index * 4 + 4
+        ]
+        source_palette.append((red, green, blue))
+    if canonical_palette is None:
+        palette = bytearray(data[palette_start:palette_end])
+        palette.extend(b"\0" * (64 - len(palette)))
+        index_translation = tuple(range(palette_count))
+    else:
+        if len(canonical_palette) != 16:
+            raise ValueError("canonical palette must contain exactly 16 colors")
+        canonical_indices = {
+            color: index for index, color in enumerate(canonical_palette)
+        }
+        try:
+            index_translation = tuple(
+                canonical_indices[color] for color in source_palette
+            )
+        except KeyError as error:
+            raise ValueError(
+                f"converted BMP contains non-PersonaWare color {error.args[0]}"
+            ) from error
+        palette = bytearray(
+            component
+            for red, green, blue in canonical_palette
+            for component in (blue, green, red, 0)
+        )
 
     source_stride = ((WIDTH * bits_per_pixel + 31) // 32) * 4
     target_stride = (((WIDTH + 1) // 2) + 3) & ~3
@@ -115,7 +163,7 @@ def normalize_indexed_bmp(data: bytes) -> bytes:
                 index = row[x]
             if index >= palette_count:
                 raise ValueError("BMP pixel references an unavailable palette entry")
-            indices.append(index)
+            indices.append(index_translation[index])
         source_rows.append(indices)
     if signed_height < 0:
         source_rows.reverse()
@@ -158,6 +206,11 @@ def prepare_photo(source: Path, destination: Path, fit: str = "crop") -> Path:
     geometry = f"{WIDTH}x{HEIGHT}^" if fit == "crop" else f"{WIDTH}x{HEIGHT}"
     with tempfile.TemporaryDirectory(prefix="pwphoto-convert-") as temporary:
         converted = Path(temporary) / "prepared.bmp"
+        palette = Path(temporary) / "personaware-palette.ppm"
+        palette.write_bytes(
+            b"P6\n16 1\n255\n"
+            + bytes(component for color in PERSONAWARE_PALETTE for component in color)
+        )
         run(
             [
                 magick,
@@ -173,8 +226,8 @@ def prepare_photo(source: Path, destination: Path, fit: str = "crop") -> Path:
                 f"{WIDTH}x{HEIGHT}",
                 "-dither",
                 "FloydSteinberg",
-                "-colors",
-                "16",
+                "-remap",
+                str(palette),
                 "-type",
                 "Palette",
                 "-compress",
@@ -182,7 +235,9 @@ def prepare_photo(source: Path, destination: Path, fit: str = "crop") -> Path:
                 f"BMP3:{converted}",
             ]
         )
-        normalized = normalize_indexed_bmp(converted.read_bytes())
+        normalized = normalize_indexed_bmp(
+            converted.read_bytes(), PERSONAWARE_PALETTE
+        )
         validate_photo_bytes(normalized)
         destination.write_bytes(normalized)
     return destination
