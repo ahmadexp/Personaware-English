@@ -1,15 +1,22 @@
 # Physical IBM PC 110 full-volume installer
 
-Use this installer for an actual IBM Palm Top PC 110. It avoids MiSTer VHD
-geometry assumptions and avoids replacing the internal PersonaWare disk one
-file at a time.
+Use a machine-specific installer for an actual IBM Palm Top PC 110. It avoids
+MiSTer VHD geometry assumptions and avoids replacing the internal PersonaWare
+disk one file at a time.
 
 ## What it installs
 
-`PW-EN.IMG` is the complete 8,160-sector logical PersonaWare volume taken from
-the current release image. It contains the original PC110 volume boot sector,
-both FATs, original root-directory and DOS system-file layout, PC DOS files,
-and PersonaWare English 2.0 with Power Management and the DOS Photo Manager.
+`PW-EN.IMG` is a complete logical PersonaWare volume built for one PC110 from
+that machine's verified `D-ORIG.IMG`. PC110 volumes can have different sector
+counts and allocation layouts. The builder preserves the captured capacity,
+CHS geometry, serial number, factory utilities, and media-specific files. It
+adds PersonaWare English 2.0 with Power Management and the DOS Photo Manager.
+
+The PC DOS boot sector requires `IBMBIO.COM` and `IBMDOS.COM` to be the first
+two root-directory entries and to occupy consecutive clusters from cluster 2.
+The builder therefore creates a fresh FAT12 filesystem with 1 KiB clusters,
+copies the DOS system files first, restores the remaining captured files and
+their DOS attributes, and verifies every resulting file byte for byte.
 
 The installer addresses the DOS logical drive `D:` through DOS absolute-volume
 sector I/O. It does not write the physical disk MBR or partition table. The
@@ -20,11 +27,26 @@ physical PC110 while receiving the complete known volume contents.
 
 1. Keep the CF that successfully boots DOS as drive `C:`.
 2. Do not format it and do not replace its DOS system files.
-3. Extract `PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip` onto its
-   root, replacing files under `PWMINST` when prompted.
-4. If `PWMINST` already contains `D-ORIG.IMG`, `D-ORIG.CRC`, or `USERDATA`,
+3. Copy the verified `D-ORIG.IMG` and `D-ORIG.CRC` from the CF to a host and
+   build the tailored archive:
+
+   ```sh
+   python3 scripts/build_physical_installer_from_backup.py \
+     --backup /path/to/D-ORIG.IMG \
+     --manifest /path/to/D-ORIG.CRC \
+     --output build/pc110-tailored-installer \
+     --zip build/PersonaWare-English-PC110-Tailored-Installer.zip
+   ```
+
+4. Extract the tailored archive onto the CF root, replacing files under
+   `PWMINST` when prompted.
+5. If `PWMINST` already contains `D-ORIG.IMG`, `D-ORIG.CRC`, or `USERDATA`,
    preserve them. They are not present in the archive and must not be deleted.
-5. Connect reliable external power to the PC110 and CF adapter.
+6. Connect reliable external power to the PC110 and CF adapter.
+
+The prebuilt 2.0.2 archive is a legacy fixed-layout image containing 8,160
+sectors. It safely refuses a different target size and is not a universal
+physical-PC110 installer.
 
 ## Install
 
@@ -40,10 +62,10 @@ The installer performs three stages:
 1. It creates and reads back an exact `D-ORIG.IMG`, or verifies the existing
    recovery image without overwriting it.
 2. It saves the four current default PersonaWare databases under `USERDATA`.
-3. It validates the complete embedded image, checks that `D:` has exactly
-   8,160 sectors, and asks you to type `INSTALL`. It writes sectors 1 through
-   8,159 first, writes the volume boot sector last, then reads every sector
-   back and checks the complete CRC-32.
+3. It validates the complete embedded image, checks that the size and serial
+   match `D:`, and asks you to type `INSTALL`. It writes all sectors except the
+   volume boot sector first, writes the boot sector last, then reads every
+   sector back and checks the complete CRC-32.
 
 After verification, the batch file deliberately loops forever. DOS still has
 the pre-install FAT and directory state cached, so do not access `D:`. Remove
@@ -70,10 +92,9 @@ user-entered text, so they are not restored automatically.
 
 ## Acceptance record
 
-The release test installed the complete hardware volume onto a disposable copy
-of the original PC110 disk. The resulting full disk matched the release image
-byte for byte with SHA-256
-`d66065cf935c4ed266660c13594f0cf1e0348391994c97b7c9818a5ebe2a91d0`
-and reached PC DOS when booted by itself. The recovery path then restored the
-target byte for byte to the original disk SHA-256
-`5149db391d13cfeab330016fcf0edbe6b0d379cbb66a3aed91dbf7684142d52e`.
+The machine-specific path was tested with an actual PC110 D: capture containing
+7,776 sectors. The build retained its geometry and BIOS drive identity while
+repacking the DOS boot files. A complete DOS installation wrote and read back
+the tailored volume byte for byte, and the installed volume reached PC DOS
+when booted as BIOS drive `81h`. The recovery path then restored every sector
+to the supplied `D-ORIG.IMG`, also byte for byte.

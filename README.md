@@ -24,7 +24,8 @@ original Power Management launcher entry remains in place.
 | Item | Value |
 | --- | --- |
 | Bootable image | [`dist/Personaware-English-2.0.img`](dist/Personaware-English-2.0.img) |
-| Physical PC110 installer | [`dist/PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip`](dist/PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip) |
+| Physical PC110 installer | Build a machine-specific package from `D-ORIG.IMG`; see below |
+| Legacy 8,160-sector hardware installer | [`dist/PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip`](dist/PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip) |
 | Legacy file-level installer | [`dist/PersonaWare-English-2.0.1-CF-Installer.zip`](dist/PersonaWare-English-2.0.1-CF-Installer.zip) |
 | Screenshot archive | [`dist/PersonaWare-English-2.0-Screenshots.zip`](dist/PersonaWare-English-2.0-Screenshots.zip) |
 | Format | 4 MiB raw MBR disk image with an active FAT partition |
@@ -54,10 +55,27 @@ mode.
 
 ## Install on a physical IBM PC 110
 
-Use `PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip` for real PC110
-hardware. Extract it over the existing `PWMINST` directory on the bootable DOS
-CF. Preserve `D-ORIG.IMG`, `D-ORIG.CRC`, and `USERDATA` if they already exist.
-Boot the CF as `C:` with the internal PersonaWare disk as `D:`, then run:
+Physical PC110 PersonaWare volumes do not all have the same sector count or FAT
+allocation layout. Build a machine-specific package from the verified
+`D-ORIG.IMG` and `D-ORIG.CRC` created on that PC110:
+
+```sh
+python3 scripts/build_physical_installer_from_backup.py \
+  --backup /path/to/D-ORIG.IMG \
+  --manifest /path/to/D-ORIG.CRC \
+  --output build/pc110-tailored-installer \
+  --zip build/PersonaWare-English-PC110-Tailored-Installer.zip
+```
+
+The builder preserves the captured volume capacity, CHS geometry, serial,
+factory utilities, and media-specific files. It rebuilds FAT12 in the proven
+PC DOS boot layout, with `IBMBIO.COM` and `IBMDOS.COM` as the first two root
+entries and contiguous from cluster 2, then verifies every file byte for byte.
+
+Extract the resulting archive over the existing `PWMINST` directory on the
+bootable DOS CF. Preserve `D-ORIG.IMG`, `D-ORIG.CRC`, and `USERDATA` if they
+already exist. Boot the CF as `C:` with the internal PersonaWare disk as `D:`,
+then run:
 
 ```bat
 C:\PWMINST\INSTALL.BAT
@@ -65,15 +83,18 @@ C:\PWMINST\INSTALL.BAT
 
 This installer does not depend on MiSTer VHD geometry and does not update the
 internal disk file by file. It verifies or creates a complete recovery image,
-then writes the known PC110 PersonaWare English volume sector for sector. That
-volume includes the original PC110 boot sector, FATs, root-directory layout,
-DOS system files, and the latest translated PersonaWare files. The volume boot
-sector is written last, and every installed sector is read back and verified.
+then writes the tailored PC110 PersonaWare English volume sector for sector.
+The volume boot sector is written last, and every installed sector is read back
+and verified.
 
 Type `INSTALL` only at the final destructive-operation prompt. After success,
 the installer locks access to `D:` because DOS still has the old filesystem in
 memory. Remove the CF and restart immediately. See the
 [physical PC110 installation guide](docs/pc110-hardware-installer.md).
+
+The prebuilt 2.0.2 hardware archive is a legacy fixed-layout package for an
+8,160-sector volume. It safely refuses other sizes and must not be used as a
+universal PC110 installer.
 
 ## Legacy file-level installer
 
@@ -316,6 +337,8 @@ resources/name-translations.tsv
 resources/base/                Version 1 build input used to reproduce 2.0
 scripts/audit_japanese.py     CP932-aware Japanese text scanner
 scripts/build_cf_installer.py Deterministic DOS CF package builder
+scripts/build_physical_installer_from_backup.py
+                              Machine-specific physical PC110 package builder
 scripts/build_enhanced_image.py
                               Photo Manager image integration
 scripts/merge_user_data.py    Host-specific user database preservation

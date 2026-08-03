@@ -13,6 +13,10 @@ from scripts.build_hardware_installer import (
     SECTOR_SIZE,
     build_hardware_installer,
 )
+from scripts.build_physical_installer_from_backup import (
+    fat12_length,
+    physical_readme,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -99,6 +103,15 @@ class HardwareInstallerTests(unittest.TestCase):
         with zipfile.ZipFile(self.archive) as archive:
             names = set(archive.namelist())
         self.assertEqual({f"PWMINST/{name}" for name in expected}, names)
+
+    def test_machine_specific_layout_uses_bootable_fat12_size(self) -> None:
+        self.assertEqual(12, fat12_length(7776, 1, 2, 32))
+
+    def test_machine_specific_readme_describes_pcdos_repack(self) -> None:
+        readme = physical_readme(7776, 0x12345678, 2).decode("ascii")
+        self.assertIn("7,776 sectors", readme)
+        self.assertIn("1,024 bytes", readme)
+        self.assertIn("contiguous from cluster 2", readme)
 
 
 if __name__ == "__main__":
