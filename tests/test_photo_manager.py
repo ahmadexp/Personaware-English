@@ -9,8 +9,10 @@ from scripts.build_enhanced_image import (
     PHOTO_SLOTS,
     add_notebook_help,
     build_enhanced_image,
+    configure_noems,
     disable_inactive_dosv_driver,
 )
+from scripts.patch_data import LAUNCHER_TITLES, patch_launcher_file
 from tools.personaware_photos import (
     PERSONAWARE_PALETTE,
     add_photo,
@@ -49,15 +51,24 @@ class PhotoManagerTests(unittest.TestCase):
             hashlib.sha256(self.source_image.read_bytes()).hexdigest(),
         )
 
-    def test_original_launcher_and_power_management_are_preserved(self) -> None:
+    def test_launcher_captions_keep_original_display_alignment(self) -> None:
         for dos_path in ("/PW/DATA/MDLAUNCH.CTL", "/PW/SYSTEM/MDLAUNCH.MAL"):
             source = self.root / f"source-{Path(dos_path).name}"
             enhanced = self.root / f"enhanced-{Path(dos_path).name}"
             copy_from_image(self.source_image, dos_path, source)
             copy_from_image(self.enhanced_image, dos_path, enhanced)
-            self.assertEqual(source.read_bytes(), enhanced.read_bytes())
-            self.assertIn(b"Power MGT", enhanced.read_bytes())
-            self.assertNotIn(b"PWPHOTO.COM", enhanced.read_bytes())
+            data = enhanced.read_bytes()
+            self.assertIn(b"Power MGT", data)
+            self.assertNotIn(b"PWPHOTO.COM", data)
+            for offset, length, leading_padding, title in LAUNCHER_TITLES:
+                field = data[offset : offset + length]
+                self.assertEqual(b" " * leading_padding, field[:leading_padding])
+                self.assertEqual(
+                    title.encode("ascii"),
+                    field[leading_padding : leading_padding + len(title)],
+                )
+            patch_launcher_file(enhanced)
+            self.assertEqual(data, enhanced.read_bytes())
 
     def test_notebook_help_is_added_once(self) -> None:
         notebook = self.root / "DEFAULT.NTD"
@@ -82,6 +93,14 @@ class PhotoManagerTests(unittest.TestCase):
         self.assertIn(b"REM " + display, data)
         self.assertNotIn(b"\r\n" + display, data)
         self.assertEqual(data, disable_inactive_dosv_driver(data))
+
+    def test_option_rom_window_is_not_used_for_ems(self) -> None:
+        config = self.root / "CONFIG-NOEMS.SYS"
+        copy_from_image(self.enhanced_image, "/CONFIG.SYS", config)
+        data = config.read_bytes()
+        self.assertIn(b"DEVICE=C:\\DOS\\EMM386.EXE NOEMS", data)
+        self.assertNotIn(b" FRAME=", data)
+        self.assertEqual(data, configure_noems(data))
 
     def test_enhanced_image_has_stock_backups_and_dos_utility(self) -> None:
         utility = self.root / "PWPHOTO.COM"

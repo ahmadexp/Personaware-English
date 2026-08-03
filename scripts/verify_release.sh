@@ -70,6 +70,8 @@ autoexec = (payload / "AUTOEXEC.BAT").read_bytes()
 ias = (payload / "DOS" / "$IAS.SUB").read_bytes()
 if (
     b"COUNTRY=001,437" not in config
+    or b"DEVICE=C:\\DOS\\EMM386.EXE NOEMS" not in config
+    or b" FRAME=" in config
     or b"REM DEVICEHIGH=C:\\DOS\\$FONT.SYS" in config
     or b"REM DEVICEHIGH=C:\\DOS\\$DISP.SYS" not in config
     or b"REM DEVICEHIGH=C:\\DOS\\$IAS.SYS" not in config

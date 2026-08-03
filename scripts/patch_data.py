@@ -12,22 +12,27 @@ import shutil
 
 
 LAUNCHER_TITLES = [
-    (0x00F, 10, "Schedule"),
-    (0x088, 9, "ToDo List"),
-    (0x0FF, 10, "Notebook"),
-    (0x176, 11, "Address"),
-    (0x1ED, 16, "E-Mail"),
-    (0x262, 19, "FAX"),
-    (0x2E0, 7, "Phone"),
-    (0x359, 12, "IR Connect"),
-    (0x3D2, 9, "Clock"),
-    (0x449, 12, "Calculator"),
-    (0x4BD, 16, "Editor"),
-    (0x538, 13, "Draw Memo"),
-    (0x5AB, 14, "Game"),
-    (0x627, 12, "Personal"),
-    (0x69A, 20, "DOS Command"),
-    (0x718, 13, "Power MGT"),
+    # offset, field length, original leading padding, English caption
+    #
+    # MDLAUNCH stores a separate pointer to the first visible byte of each
+    # lower-LCD caption. Keep the Japanese fields' leading padding intact or
+    # that pointer lands in the middle of the English text.
+    (0x00F, 10, 4, "Agenda"),
+    (0x088, 9, 3, "To-Do"),
+    (0x0FF, 10, 4, "Notes"),
+    (0x176, 11, 5, "People"),
+    (0x1ED, 16, 6, "E-Mail"),
+    (0x262, 19, 9, "FAX"),
+    (0x2E0, 7, 3, "Call"),
+    (0x359, 12, 2, "IR Connect"),
+    (0x3D2, 9, 1, "Clock"),
+    (0x449, 12, 2, "Calculator"),
+    (0x4BD, 16, 6, "Editor"),
+    (0x538, 13, 3, "Draw Memo"),
+    (0x5AB, 14, 8, "Game"),
+    (0x627, 12, 4, "Personal"),
+    (0x69A, 20, 9, "DOS Command"),
+    (0x718, 13, 3, "Power MGT"),
 ]
 
 ERA_NAMES = [
@@ -119,12 +124,15 @@ def translate_dial_directory(
 
 def patch_launcher_file(path: Path) -> None:
     data = bytearray(path.read_bytes())
-    for offset, length, title in LAUNCHER_TITLES:
+    for offset, length, leading_padding, title in LAUNCHER_TITLES:
         replacement = title.encode("ascii")
-        if len(replacement) > length:
+        available = length - leading_padding
+        if len(replacement) > available:
             raise ValueError(f"Launcher title is too long: {title}")
-        data[offset : offset + length] = replacement + b" " * (
-            length - len(replacement)
+        data[offset : offset + length] = (
+            b" " * leading_padding
+            + replacement
+            + b" " * (available - len(replacement))
         )
     path.write_bytes(data)
 

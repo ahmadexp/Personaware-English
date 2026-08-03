@@ -17,7 +17,9 @@ help panels, launcher metadata, bundled data, and active DOS environment with
 concise English text while preserving the original software layout and PC 110
 hardware behavior. Version 2.0 also adds a native DOS Photo Manager with
 protected original pictures and tools for preparing modern image files. The
-original Power Management launcher entry remains in place.
+original Power Management launcher entry remains in place. Version 2.0.6
+restores the English captions in the launcher's lower center LCD panel and
+keeps the PC110 option-ROM window free by using `EMM386 NOEMS`.
 
 ## Get the image
 
@@ -25,7 +27,7 @@ original Power Management launcher entry remains in place.
 | --- | --- |
 | Bootable image | [`dist/Personaware-English-2.0.img`](dist/Personaware-English-2.0.img) |
 | Physical PC110 installer | Build a machine-specific package from `D-ORIG.IMG`; see below |
-| Verified factory-layout PC110 installer | [`PersonaWare-English-2.0.5-PC110-Factory-Layout-Installer.zip`](https://github.com/ahmadexp/Personaware-English/releases/latest/download/PersonaWare-English-2.0.5-PC110-Factory-Layout-Installer.zip) |
+| Verified factory-layout PC110 installer | [`PersonaWare-English-2.0.6-PC110-Factory-Layout-Installer.zip`](https://github.com/ahmadexp/Personaware-English/releases/latest/download/PersonaWare-English-2.0.6-PC110-Factory-Layout-Installer.zip) |
 | Modern 14-picture pack | [`PersonaWare-Modern-14-Picture-Pack.zip`](https://github.com/ahmadexp/Personaware-English/releases/latest/download/PersonaWare-Modern-14-Picture-Pack.zip) |
 | Legacy 8,160-sector hardware installer | [`dist/PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip`](dist/PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip) |
 | Legacy file-level installer | [`dist/PersonaWare-English-2.0.1-CF-Installer.zip`](dist/PersonaWare-English-2.0.1-CF-Installer.zip) |
@@ -38,11 +40,11 @@ original Power Management launcher entry remains in place.
 SHA-256 checksums:
 
 ```text
-d66065cf935c4ed266660c13594f0cf1e0348391994c97b7c9818a5ebe2a91d0  Personaware-English-2.0.img
-fb47927945ad175842f1bb5420504ac68be99432b39587192dbd280a22eabfe8  PersonaWare-English-2.0.1-CF-Installer.zip
-2c3a2fde55bcd5bd7ffd37f87bb757b355ebd9c3bb8111fb6659600089ca58ad  PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip
-8e09e1a3995b09aa598101e272948c16ae51b2ac508db03eccfe918a0fc12442  PersonaWare-English-2.0-Screenshots.zip
-20a8f3ad8c62cf9d746094d1b40e452e118c50add18a569b38a6816ca566b236  PersonaWare-English-2.0.5-PC110-Factory-Layout-Installer.zip
+bb080741f5aac4a6cf9a47672a496c64ab4e332cd7e8535ce9d658e5707867e0  Personaware-English-2.0.img
+af1cd853fd315d734d80b1bf53002e6c407c9dda48945c440321b44a11cbb4eb  PersonaWare-English-2.0.1-CF-Installer.zip
+b7b5a01add2f102f85cf84325962a30a818d854d4263bad30a860e0d9ccf0e3e  PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip
+a1931008d987389052cd9c82ae61bfc128ca412aba0bc73be7728e78e5381ce4  PersonaWare-English-2.0-Screenshots.zip
+393d03b38d232d558b6f8683b0f273425f3396a8f335a26925b81878cc110af1  PersonaWare-English-2.0.6-PC110-Factory-Layout-Installer.zip
 84d6f8d4e8e9a18715bf950388522b4e5c8f2ec035924969153d4841fb7c5fa7  PersonaWare-Modern-14-Picture-Pack.zip
 ```
 
@@ -104,7 +106,7 @@ The prebuilt 2.0.2 hardware archive is a legacy fixed-layout package for an
 8,160-sector volume. It safely refuses other sizes and must not be used as a
 universal PC110 installer.
 
-The prebuilt 2.0.5 factory-layout package was built and hardware-tested for a
+The prebuilt 2.0.6 factory-layout package uses the hardware-tested layout for a
 7,776-sector PersonaWare volume with serial `3F4B-1004`. It preserves the IBM
 PC DOS system-file layout and uses BIOS drive `80h` after the installer CF is
 removed. Its installer validates the target identity and refuses a different
@@ -317,6 +319,8 @@ The release image passed structural, static, and runtime checks:
 - Confirmed the original 16-item launcher and Power Management entry are
   unchanged, then ran `PWPHOTO` from DOS, listed an empty gallery, and restored
   all five original pictures.
+- Confirmed complete lower center LCD captions on both MiSTer test systems and
+  verified zero BIOS POST errors with the `EMM386 NOEMS` configuration.
 - Rebuilt and tested the DOS CF installer, recovery image metadata, backup-first
   ordering, verified resume, payload CRCs, complete image read-back, target
   identity checks, boot-sector-last restore, emergency recovery, and the

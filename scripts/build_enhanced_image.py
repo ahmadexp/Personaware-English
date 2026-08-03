@@ -9,6 +9,11 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+if __package__:
+    from scripts.patch_data import patch_launcher_file
+else:
+    from patch_data import patch_launcher_file
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = PROJECT_ROOT / "resources" / "base" / "Personaware-English-1.0.img"
@@ -69,6 +74,21 @@ def disable_inactive_dosv_driver(data: bytes) -> bytes:
     if data.count(active) != 1:
         raise ValueError("CONFIG.SYS is missing the expected $DISP.SYS line")
     return data.replace(active, inactive, 1)
+
+
+def configure_noems(data: bytes) -> bytes:
+    """Keep UMB support off so the PC110 option-ROM window stays available."""
+    replacement = b"DEVICE=C:\\DOS\\EMM386.EXE NOEMS"
+    lines = data.split(b"\r\n")
+    matches = [
+        index
+        for index, line in enumerate(lines)
+        if line.upper().startswith(b"DEVICE=C:\\DOS\\EMM386.EXE ")
+    ]
+    if len(matches) != 1:
+        raise ValueError("CONFIG.SYS is missing the expected EMM386 line")
+    lines[matches[0]] = replacement
+    return b"\r\n".join(lines)
 
 
 def photo_help() -> bytes:
@@ -153,12 +173,20 @@ def build_enhanced_image(source: Path, output: Path) -> Path:
 
         config = temporary_root / "CONFIG.SYS"
         copy_from_image(output, "/CONFIG.SYS", config)
-        config.write_bytes(disable_inactive_dosv_driver(config.read_bytes()))
+        config.write_bytes(
+            configure_noems(disable_inactive_dosv_driver(config.read_bytes()))
+        )
         copy_to_image(output, config, "/CONFIG.SYS")
 
         help_file = temporary_root / "PWPHOTO.TXT"
         help_file.write_bytes(photo_help())
         copy_to_image(output, help_file, "/PWPHOTO.TXT")
+
+        for dos_path in ("/PW/DATA/MDLAUNCH.CTL", "/PW/SYSTEM/MDLAUNCH.MAL"):
+            launcher = temporary_root / Path(dos_path).name
+            copy_from_image(output, dos_path, launcher)
+            patch_launcher_file(launcher)
+            copy_to_image(output, launcher, dos_path)
 
     copy_to_image(output, utility, "/PWPHOTO.COM")
     validate_enhanced_image(output)

@@ -2,6 +2,23 @@
 
 All notable project changes are documented here.
 
+## 2.0.6 - 2026-08-03
+
+### Fixed
+
+- Restored every English caption in the launcher's lower center LCD panel by
+  preserving the original per-entry field alignment used by `MDLAUNCH`.
+- Changed the active memory-manager setup to `EMM386 NOEMS`, preventing its
+  page frame from occupying the PC110 option-ROM window and eliminating the
+  option ROM and RAM warning during startup.
+
+### Verified
+
+- Confirmed the complete `DOS Command` caption on MiSTer `192.168.1.74` and
+  the complete `Clock` caption on `192.168.10.251`.
+- Both MiSTer systems boot PersonaWare with BIOS error count `00` and first
+  error code `0000`.
+
 ## 2.0.5 - 2026-08-03
 
 ### Added
@@ -25,7 +42,7 @@ All notable project changes are documented here.
 - The factory-layout installer boots PersonaWare on physical IBM PC110
   hardware after the installer CF is removed.
 - The corrected image set boots on both MiSTer test units with zero POST
-  errors, correct picture colors, and the lower LCD status text intact.
+  errors and correct picture colors.
 
 ## 2.0.0 - 2026-08-02
 
