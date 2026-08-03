@@ -19,6 +19,11 @@ All notable project changes are documented here.
 - Both MiSTer systems boot PersonaWare with BIOS error count `00` and first
   error code `0000`.
 
+### Documentation
+
+- Refreshed the README and screenshot archive with live MiSTer captures of the
+  restored `Clock` and `DOS Command` LCD captions.
+
 ## 2.0.5 - 2026-08-03
 
 ### Added

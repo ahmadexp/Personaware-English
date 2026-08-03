@@ -137,6 +137,7 @@ with zipfile.ZipFile(screenshot_archive) as archive:
     screenshot_names = set(archive.namelist())
 for screenshot in (
     "launcher.png",
+    "launcher-dos-command-caption.png",
     "photo-manager-menu.png",
     "address-book-warning.png",
     "address-book-help.png",

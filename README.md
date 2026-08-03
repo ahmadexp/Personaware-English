@@ -43,7 +43,7 @@ SHA-256 checksums:
 bb080741f5aac4a6cf9a47672a496c64ab4e332cd7e8535ce9d658e5707867e0  Personaware-English-2.0.img
 af1cd853fd315d734d80b1bf53002e6c407c9dda48945c440321b44a11cbb4eb  PersonaWare-English-2.0.1-CF-Installer.zip
 b7b5a01add2f102f85cf84325962a30a818d854d4263bad30a860e0d9ccf0e3e  PersonaWare-English-2.0.2-PC110-Hardware-Installer.zip
-a1931008d987389052cd9c82ae61bfc128ca412aba0bc73be7728e78e5381ce4  PersonaWare-English-2.0-Screenshots.zip
+d31c1ab5e4ed1209b354de6defa8663a04c0a64d95176ad2883744c16334eded  PersonaWare-English-2.0-Screenshots.zip
 393d03b38d232d558b6f8683b0f273425f3396a8f335a26925b81878cc110af1  PersonaWare-English-2.0.6-PC110-Factory-Layout-Installer.zip
 84d6f8d4e8e9a18715bf950388522b4e5c8f2ec035924969153d4841fb7c5fa7  PersonaWare-Modern-14-Picture-Pack.zip
 ```
@@ -54,10 +54,10 @@ Verify the download before booting:
 shasum -a 256 -c dist/SHA256SUMS.txt
 ```
 
-Boot a copy of the image on an IBM PC 110 or a compatible emulator. The final
-runtime pass was performed with the
-[`pc110-qemu`](https://github.com/ahmadexp/pc110-qemu) environment in snapshot
-mode.
+Boot a copy of the image on an IBM PC 110 or a compatible emulator. The 2.0.6
+runtime pass was performed on two MiSTer systems. Both reached the PersonaWare
+launcher with BIOS error count `00` and first error code `0000`; the restored
+lower center LCD captions were confirmed independently on each system.
 
 ## Install on a physical IBM PC 110
 
@@ -213,36 +213,40 @@ that is mounted or currently running.
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/images/launcher.png" alt="English PersonaWare launcher with Power Management"><br>
-      <sub>Original launcher layout with Power Management</sub>
+      <img src="docs/images/launcher.png" alt="PersonaWare 2.0.6 launcher showing the restored Clock caption"><br>
+      <sub>Restored <code>Clock</code> LCD caption on MiSTer 192.168.10.251</sub>
     </td>
+    <td width="50%" align="center">
+      <img src="docs/images/launcher-dos-command-caption.png" alt="PersonaWare 2.0.6 launcher showing the restored DOS Command caption"><br>
+      <sub>Restored <code>DOS Command</code> LCD caption on MiSTer 192.168.1.74</sub>
+    </td>
+  </tr>
+  <tr>
     <td width="50%" align="center">
       <img src="docs/images/photo-manager-menu.png" alt="PersonaWare DOS Photo Manager menu"><br>
       <sub>Add, remove, assign, and restore launcher pictures</sub>
     </td>
-  </tr>
-  <tr>
     <td width="50%" align="center">
       <img src="docs/images/address-book-help.png" alt="English Address Book help"><br>
       <sub>Address Book help and keyboard reference</sub>
     </td>
+  </tr>
+  <tr>
     <td width="50%" align="center">
       <img src="docs/images/address-book-warning.png" alt="English Address Book cancel warning"><br>
       <sub>Translated warning and confirmation dialog</sub>
     </td>
-  </tr>
-  <tr>
     <td width="50%" align="center">
       <img src="docs/images/email-help.png" alt="English E-Mail help"><br>
       <sub>E-Mail help</sub>
     </td>
+  </tr>
+  <tr>
     <td width="50%" align="center">
       <img src="docs/images/fax-help.png" alt="English FAX help"><br>
       <sub>FAX help</sub>
     </td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center">
+    <td width="50%" align="center">
       <img src="docs/images/dos-command.png" alt="English PC DOS command error"><br>
       <sub>English DOS shell and command errors</sub>
     </td>

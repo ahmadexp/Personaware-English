@@ -14,7 +14,10 @@ ARCHIVE_ROOT = "PersonaWare-English-2.0-Screenshots"
 TIMESTAMP = (2026, 8, 2, 0, 0, 0)
 
 CAPTIONS = {
-    "launcher.png": "English PersonaWare launcher with Power Management",
+    "launcher.png": "Restored Clock LCD caption on MiSTer 192.168.10.251",
+    "launcher-dos-command-caption.png": (
+        "Restored DOS Command LCD caption on MiSTer 192.168.1.74"
+    ),
     "photo-manager-menu.png": "Photo Manager add, remove, assign, and restore menu",
     "address-book-warning.png": "Translated Address Book warning",
     "address-book-help.png": "English Address Book help",
@@ -48,7 +51,7 @@ def build_archive(output: Path = OUTPUT) -> Path:
     index.extend(
         (
             "",
-            "The images document the translated launcher, application help,",
+            "The images document the corrected 2.0.6 launcher, application help,",
             "Photo Manager, DOS environment, and safe CF install and recovery.",
             "",
         )
