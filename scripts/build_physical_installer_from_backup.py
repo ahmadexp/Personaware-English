@@ -142,12 +142,18 @@ def apply_payload_to_capture(
     return patched
 
 
-def fat12_length(total_sectors: int, reserved: int, fats: int, root_sectors: int) -> int:
-    """Return a self-consistent FAT12 length for two-sector clusters."""
+def fat12_length(
+    total_sectors: int,
+    reserved: int,
+    fats: int,
+    root_sectors: int,
+    cluster_sectors: int,
+) -> int:
+    """Return a self-consistent FAT12 length for the requested cluster size."""
     fat_sectors = 1
     while True:
         data_sectors = total_sectors - reserved - root_sectors - fats * fat_sectors
-        clusters = data_sectors // 2
+        clusters = data_sectors // cluster_sectors
         required = math.ceil(math.ceil((clusters + 2) * 3 / 2) / SECTOR_SIZE)
         if required == fat_sectors:
             return required
@@ -214,6 +220,52 @@ def contiguous_chain(image: Path, name: str) -> tuple[int, int]:
     return int(first), int(last)
 
 
+def factory_boot_sector(pqi: Path, reference: bytes, sectors: int) -> bytes:
+    """Locate the original PC DOS FAT12 VBR embedded in a PowerQuest image."""
+    archive = pqi.read_bytes()
+    marker = b"\xeb\x3c\x90IBM  7.0"
+    matches: list[bytes] = []
+    offset = 0
+    while True:
+        offset = archive.find(marker, offset)
+        if offset < 0:
+            break
+        candidate = archive[offset : offset + SECTOR_SIZE]
+        offset += 1
+        if len(candidate) != SECTOR_SIZE or candidate[510:512] != b"\x55\xaa":
+            continue
+        if struct.unpack_from("<H", candidate, 11)[0] != SECTOR_SIZE:
+            continue
+        if struct.unpack_from("<H", candidate, 19)[0] != sectors:
+            continue
+        if candidate[13] != reference[13]:
+            continue
+        if candidate[16] != reference[16]:
+            continue
+        if struct.unpack_from("<H", candidate, 17)[0] != struct.unpack_from(
+            "<H", reference, 17
+        )[0]:
+            continue
+        if struct.unpack_from("<H", candidate, 24)[0] != struct.unpack_from(
+            "<H", reference, 24
+        )[0]:
+            continue
+        if struct.unpack_from("<H", candidate, 26)[0] != struct.unpack_from(
+            "<H", reference, 26
+        )[0]:
+            continue
+        if struct.unpack_from("<I", candidate, 28)[0] != struct.unpack_from(
+            "<I", reference, 28
+        )[0]:
+            continue
+        matches.append(candidate)
+    if len(matches) != 1:
+        raise ValueError(
+            f"expected one matching PC DOS FAT12 boot sector in {pqi}, found {len(matches)}"
+        )
+    return matches[0]
+
+
 def rebuild_bootable_volume(
     patched_capture: Path,
     release_image: Path,
@@ -221,6 +273,7 @@ def rebuild_bootable_volume(
     sectors: int,
     serial: int,
     boot_drive: int,
+    factory_pqi: Path | None = None,
 ) -> bytes:
     """Repack the capture in the proven PC DOS layout required by its boot code."""
     source = patched_capture.read_bytes()
@@ -231,17 +284,23 @@ def rebuild_bootable_volume(
     sectors_per_track = struct.unpack_from("<H", source, 24)[0]
     heads = struct.unpack_from("<H", source, 26)[0]
     hidden = struct.unpack_from("<I", source, 28)[0]
+    cluster_sectors = source[13]
     if not 0x80 <= boot_drive <= 0xFF:
         raise ValueError("boot drive must be a hard-disk BIOS number")
     root_sectors = math.ceil(root_entries * 32 / SECTOR_SIZE)
-    fat_sectors = fat12_length(sectors, reserved, fats, root_sectors)
+    fat_sectors = fat12_length(
+        sectors, reserved, fats, root_sectors, cluster_sectors
+    )
 
-    release = release_image.read_bytes()
-    if len(release) < SECTOR_SIZE or release[510:512] != b"\x55\xaa":
-        raise ValueError("release image does not contain a valid MBR")
-    release_partition = struct.unpack_from("<I", release, 446 + 8)[0]
-    boot_offset = release_partition * SECTOR_SIZE
-    boot_template = release[boot_offset : boot_offset + SECTOR_SIZE]
+    if factory_pqi is not None:
+        boot_template = factory_boot_sector(factory_pqi, source, sectors)
+    else:
+        release = release_image.read_bytes()
+        if len(release) < SECTOR_SIZE or release[510:512] != b"\x55\xaa":
+            raise ValueError("release image does not contain a valid MBR")
+        release_partition = struct.unpack_from("<I", release, 446 + 8)[0]
+        boot_offset = release_partition * SECTOR_SIZE
+        boot_template = release[boot_offset : boot_offset + SECTOR_SIZE]
     if len(boot_template) != SECTOR_SIZE or boot_template[510:512] != b"\x55\xaa":
         raise ValueError("release image does not contain a valid PC DOS boot sector")
     if boot_template[62:510] != source[62:510]:
@@ -269,7 +328,7 @@ def rebuild_bootable_volume(
                 "-H",
                 str(hidden),
                 "-c",
-                "2",
+                str(cluster_sectors),
                 "-r",
                 str(root_sectors),
                 "-L",
@@ -328,8 +387,8 @@ def rebuild_bootable_volume(
     rebuilt = destination.read_bytes()
     if len(rebuilt) != sectors * SECTOR_SIZE:
         raise ValueError("repacked volume has the wrong byte length")
-    if rebuilt[13] != 2:
-        raise ValueError("repacked volume does not use the PC DOS boot cluster layout")
+    if rebuilt[13] != cluster_sectors:
+        raise ValueError("repacked volume changed the captured cluster size")
     root_start = (reserved + fats * fat_sectors) * SECTOR_SIZE
     if rebuilt[root_start : root_start + 11] != b"IBMBIO  COM":
         raise ValueError("IBMBIO.COM is not the first root-directory entry")
@@ -343,7 +402,11 @@ def rebuild_bootable_volume(
 
 
 def physical_readme(
-    sectors: int, serial: int, sectors_per_cluster: int, boot_drive: int
+    sectors: int,
+    serial: int,
+    sectors_per_cluster: int,
+    boot_drive: int,
+    used_factory_pqi: bool,
 ) -> bytes:
     return dos_text(
         [
@@ -361,6 +424,11 @@ def physical_readme(
             "IBMDOS.COM are the first root entries and contiguous from cluster 2.",
             "The latest PersonaWare English payload was applied offline and every",
             "installed file was verified byte for byte.",
+            *(
+                ["The volume boot sector was taken from the original PowerQuest image."]
+                if used_factory_pqi
+                else []
+            ),
             "",
             "INSTALL",
             "  1. Boot the DOS CF as C: with the internal flash volume as D:.",
@@ -388,6 +456,7 @@ def build_from_backup(
     output: Path,
     zip_path: Path,
     boot_drive: int = 0x80,
+    factory_pqi: Path | None = None,
 ) -> Path:
     _, sectors, serial = parse_recovery(backup, recovery_manifest)
     with tempfile.TemporaryDirectory(prefix="pwenglish-physical-build-") as temporary:
@@ -401,6 +470,7 @@ def build_from_backup(
             sectors,
             serial,
             boot_drive,
+            factory_pqi,
         )
         rebuilt_crc = zlib.crc32(rebuilt) & 0xFFFFFFFF
         patched_manifest = struct.pack(
@@ -411,7 +481,9 @@ def build_from_backup(
         (package / "PW-EN.IMG").write_bytes(rebuilt)
         (package / "PW-EN.CRC").write_bytes(patched_manifest)
         (package / "README.TXT").write_bytes(
-            physical_readme(sectors, serial, rebuilt[13], boot_drive)
+            physical_readme(
+                sectors, serial, rebuilt[13], boot_drive, factory_pqi is not None
+            )
         )
         write_checksums(package)
         write_deterministic_zip(package, zip_path)
@@ -431,6 +503,11 @@ def main() -> int:
         default=0x80,
         help="boot-time BIOS drive number after removing the installer CF (default: 0x80)",
     )
+    parser.add_argument(
+        "--factory-pqi",
+        type=Path,
+        help="original PowerQuest image containing the factory PC DOS FAT12 boot sector",
+    )
     args = parser.parse_args()
     package = build_from_backup(
         args.backup,
@@ -439,6 +516,7 @@ def main() -> int:
         args.output,
         args.zip_path,
         args.boot_drive,
+        args.factory_pqi,
     )
     print(f"Built {args.zip_path} with {sum(p.is_file() for p in package.iterdir())} files")
     return 0

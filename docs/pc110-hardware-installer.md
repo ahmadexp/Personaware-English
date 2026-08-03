@@ -14,12 +14,11 @@ adds PersonaWare English 2.0 with Power Management and the DOS Photo Manager.
 
 The PC DOS boot sector requires `IBMBIO.COM` and `IBMDOS.COM` to be the first
 two root-directory entries and to occupy consecutive clusters from cluster 2.
-The builder therefore creates a fresh FAT12 filesystem with 1 KiB clusters,
+The builder creates a fresh FAT12 filesystem using the captured cluster size,
 copies the DOS system files first, restores the remaining captured files and
-their DOS attributes, and verifies every resulting file byte for byte. The
-captured volume may report BIOS drive `81h` while the installer CF is present.
-The tailored boot sector uses `80h` because the internal disk becomes the first
-BIOS hard disk after that CF is removed.
+their DOS attributes, and verifies every resulting file byte for byte. An
+original PowerQuest image can supply the factory IBM PC DOS 7 boot sector. The
+verified factory image uses 4 KiB clusters and BIOS drive `80h`.
 
 The installer addresses the DOS logical drive `D:` through DOS absolute-volume
 sector I/O. It does not write the physical disk MBR or partition table. The
@@ -37,6 +36,7 @@ physical PC110 while receiving the complete known volume contents.
    python3 scripts/build_physical_installer_from_backup.py \
      --backup /path/to/D-ORIG.IMG \
      --manifest /path/to/D-ORIG.CRC \
+     --factory-pqi /path/to/Personaware.PQI \
      --output build/pc110-tailored-installer \
      --zip build/PersonaWare-English-PC110-Tailored-Installer.zip
    ```
@@ -97,8 +97,9 @@ user-entered text, so they are not restored automatically.
 ## Acceptance record
 
 The machine-specific path was tested with an actual PC110 D: capture containing
-7,776 sectors. The build retained its geometry and BIOS drive identity while
-repacking the DOS boot files. A complete DOS installation wrote and read back
-the tailored volume byte for byte, and the installed volume reached PC DOS
-when booted as BIOS drive `81h`. The recovery path then restored every sector
-to the supplied `D-ORIG.IMG`, also byte for byte.
+7,776 sectors and its original PowerQuest image. The PQI independently confirms
+the factory 4 KiB FAT12 cluster size, contiguous system files, and BIOS drive
+`80h`. A complete DOS installation wrote and read back the tailored volume byte
+for byte, and the installed volume reached PC DOS as the only hard disk. The
+recovery path then restored every sector to the supplied `D-ORIG.IMG`, also byte
+for byte.

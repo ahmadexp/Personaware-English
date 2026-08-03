@@ -14,6 +14,7 @@ from scripts.build_hardware_installer import (
     build_hardware_installer,
 )
 from scripts.build_physical_installer_from_backup import (
+    factory_boot_sector,
     fat12_length,
     physical_readme,
 )
@@ -105,14 +106,37 @@ class HardwareInstallerTests(unittest.TestCase):
         self.assertEqual({f"PWMINST/{name}" for name in expected}, names)
 
     def test_machine_specific_layout_uses_bootable_fat12_size(self) -> None:
-        self.assertEqual(12, fat12_length(7776, 1, 2, 32))
+        self.assertEqual(12, fat12_length(7776, 1, 2, 32, 2))
+        self.assertEqual(3, fat12_length(7776, 1, 2, 32, 8))
 
     def test_machine_specific_readme_describes_pcdos_repack(self) -> None:
-        readme = physical_readme(7776, 0x12345678, 2, 0x80).decode("ascii")
+        readme = physical_readme(7776, 0x12345678, 8, 0x80, True).decode(
+            "ascii"
+        )
         self.assertIn("7,776 sectors", readme)
-        self.assertIn("1,024 bytes", readme)
+        self.assertIn("4,096 bytes", readme)
         self.assertIn("contiguous from cluster 2", readme)
         self.assertIn("Boot-time BIOS drive: 80h", readme)
+        self.assertIn("original PowerQuest image", readme)
+
+    def test_factory_boot_sector_is_located_inside_pqi_archive(self) -> None:
+        disk = (PROJECT_ROOT / "dist" / "Personaware-English-2.0.img").read_bytes()
+        partition_sector = struct.unpack_from("<I", disk, 446 + 8)[0]
+        boot = bytearray(
+            disk[partition_sector * SECTOR_SIZE : (partition_sector + 1) * SECTOR_SIZE]
+        )
+        boot[3:11] = b"IBM  7.0"
+        with tempfile.TemporaryDirectory(prefix="pwenglish-test-pqi-") as temporary:
+            archive = Path(temporary) / "factory.pqi"
+            archive.write_bytes(b"PowerQuest header" + boot + b"archive tail")
+            self.assertEqual(
+                bytes(boot),
+                factory_boot_sector(
+                    archive,
+                    bytes(boot),
+                    struct.unpack_from("<H", boot, 19)[0],
+                ),
+            )
 
 
 if __name__ == "__main__":
