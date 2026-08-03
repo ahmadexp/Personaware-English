@@ -220,6 +220,7 @@ def rebuild_bootable_volume(
     destination: Path,
     sectors: int,
     serial: int,
+    boot_drive: int,
 ) -> bytes:
     """Repack the capture in the proven PC DOS layout required by its boot code."""
     source = patched_capture.read_bytes()
@@ -230,7 +231,8 @@ def rebuild_bootable_volume(
     sectors_per_track = struct.unpack_from("<H", source, 24)[0]
     heads = struct.unpack_from("<H", source, 26)[0]
     hidden = struct.unpack_from("<I", source, 28)[0]
-    drive = source[36]
+    if not 0x80 <= boot_drive <= 0xFF:
+        raise ValueError("boot drive must be a hard-disk BIOS number")
     root_sectors = math.ceil(root_entries * 32 / SECTOR_SIZE)
     fat_sectors = fat12_length(sectors, reserved, fats, root_sectors)
 
@@ -277,7 +279,7 @@ def rebuild_bootable_volume(
                 "-m",
                 f"0x{media:02x}",
                 "-b",
-                f"0x{drive:02x}",
+                f"0x{boot_drive:02x}",
                 "-B",
                 str(template_path),
                 "-i",
@@ -340,7 +342,9 @@ def rebuild_bootable_volume(
     return rebuilt
 
 
-def physical_readme(sectors: int, serial: int, sectors_per_cluster: int) -> bytes:
+def physical_readme(
+    sectors: int, serial: int, sectors_per_cluster: int, boot_drive: int
+) -> bytes:
     return dos_text(
         [
             "PERSONAWARE ENGLISH - MACHINE-SPECIFIC PC110 INSTALLER",
@@ -349,6 +353,7 @@ def physical_readme(sectors: int, serial: int, sectors_per_cluster: int) -> byte
             "This package was built from this PC110's verified D-ORIG.IMG.",
             f"Target volume: {sectors:,} sectors, serial {serial >> 16:04X}-{serial & 0xffff:04X}.",
             f"Filesystem allocation unit: {sectors_per_cluster * SECTOR_SIZE:,} bytes.",
+            f"Boot-time BIOS drive: {boot_drive:02X}h.",
             "",
             "PW-EN.IMG preserves the supplied physical flash capacity, CHS",
             "geometry, serial number, factory utilities, and media-specific files.",
@@ -364,6 +369,7 @@ def physical_readme(sectors: int, serial: int, sectors_per_cluster: int) -> byte
             "  4. Type INSTALL only at the final confirmation prompt.",
             "  5. Wait for complete sector read-back verification.",
             "  6. Remove the CF and restart immediately when instructed.",
+            "     With the installer CF removed, the internal disk boots as 80h.",
             "",
             "Do not access D: after installation before restarting. DOS still",
             "has the old FAT and directory state cached in memory.",
@@ -381,6 +387,7 @@ def build_from_backup(
     release_image: Path,
     output: Path,
     zip_path: Path,
+    boot_drive: int = 0x80,
 ) -> Path:
     _, sectors, serial = parse_recovery(backup, recovery_manifest)
     with tempfile.TemporaryDirectory(prefix="pwenglish-physical-build-") as temporary:
@@ -388,7 +395,12 @@ def build_from_backup(
         apply_payload_to_capture(backup, release_image, patched_capture)
         rebuilt_path = Path(temporary) / "PW-EN.IMG"
         rebuilt = rebuild_bootable_volume(
-            patched_capture, release_image, rebuilt_path, sectors, serial
+            patched_capture,
+            release_image,
+            rebuilt_path,
+            sectors,
+            serial,
+            boot_drive,
         )
         rebuilt_crc = zlib.crc32(rebuilt) & 0xFFFFFFFF
         patched_manifest = struct.pack(
@@ -399,7 +411,7 @@ def build_from_backup(
         (package / "PW-EN.IMG").write_bytes(rebuilt)
         (package / "PW-EN.CRC").write_bytes(patched_manifest)
         (package / "README.TXT").write_bytes(
-            physical_readme(sectors, serial, rebuilt[13])
+            physical_readme(sectors, serial, rebuilt[13], boot_drive)
         )
         write_checksums(package)
         write_deterministic_zip(package, zip_path)
@@ -413,6 +425,12 @@ def main() -> int:
     parser.add_argument("--release-image", type=Path, default=DEFAULT_RELEASE_IMAGE)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--zip", dest="zip_path", type=Path, required=True)
+    parser.add_argument(
+        "--boot-drive",
+        type=lambda value: int(value, 0),
+        default=0x80,
+        help="boot-time BIOS drive number after removing the installer CF (default: 0x80)",
+    )
     args = parser.parse_args()
     package = build_from_backup(
         args.backup,
@@ -420,6 +438,7 @@ def main() -> int:
         args.release_image,
         args.output,
         args.zip_path,
+        args.boot_drive,
     )
     print(f"Built {args.zip_path} with {sum(p.is_file() for p in package.iterdir())} files")
     return 0

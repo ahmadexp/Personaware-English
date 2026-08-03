@@ -16,7 +16,10 @@ The PC DOS boot sector requires `IBMBIO.COM` and `IBMDOS.COM` to be the first
 two root-directory entries and to occupy consecutive clusters from cluster 2.
 The builder therefore creates a fresh FAT12 filesystem with 1 KiB clusters,
 copies the DOS system files first, restores the remaining captured files and
-their DOS attributes, and verifies every resulting file byte for byte.
+their DOS attributes, and verifies every resulting file byte for byte. The
+captured volume may report BIOS drive `81h` while the installer CF is present.
+The tailored boot sector uses `80h` because the internal disk becomes the first
+BIOS hard disk after that CF is removed.
 
 The installer addresses the DOS logical drive `D:` through DOS absolute-volume
 sector I/O. It does not write the physical disk MBR or partition table. The
@@ -69,7 +72,8 @@ The installer performs three stages:
 
 After verification, the batch file deliberately loops forever. DOS still has
 the pre-install FAT and directory state cached, so do not access `D:`. Remove
-the CF and restart the PC110 immediately.
+the CF and restart the PC110 immediately. Leaving the installer CF connected
+changes the BIOS drive order and is not supported by the default package.
 
 ## Recovery
 

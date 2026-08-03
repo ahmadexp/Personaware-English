@@ -108,10 +108,11 @@ class HardwareInstallerTests(unittest.TestCase):
         self.assertEqual(12, fat12_length(7776, 1, 2, 32))
 
     def test_machine_specific_readme_describes_pcdos_repack(self) -> None:
-        readme = physical_readme(7776, 0x12345678, 2).decode("ascii")
+        readme = physical_readme(7776, 0x12345678, 2, 0x80).decode("ascii")
         self.assertIn("7,776 sectors", readme)
         self.assertIn("1,024 bytes", readme)
         self.assertIn("contiguous from cluster 2", readme)
+        self.assertIn("Boot-time BIOS drive: 80h", readme)
 
 
 if __name__ == "__main__":

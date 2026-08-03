@@ -71,6 +71,8 @@ The builder preserves the captured volume capacity, CHS geometry, serial,
 factory utilities, and media-specific files. It rebuilds FAT12 in the proven
 PC DOS boot layout, with `IBMBIO.COM` and `IBMDOS.COM` as the first two root
 entries and contiguous from cluster 2, then verifies every file byte for byte.
+It sets the boot drive to BIOS `80h`, which is the internal disk's identity
+after the installer CF is removed.
 
 Extract the resulting archive over the existing `PWMINST` directory on the
 bootable DOS CF. Preserve `D-ORIG.IMG`, `D-ORIG.CRC`, and `USERDATA` if they
